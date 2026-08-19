@@ -4,12 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "smee": "smee -u https://smee.io/f6Dgli627sedK9qg -t http://localhost:3000/api/webhooks/github",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
     "next": "16.3.1",
+    "octokit": "^5.0.5",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
