@@ -1,4 +1,6 @@
 import { App } from "octokit"
+import { commentSyntaxFor, commentTextIn } from "@/lib/comments"
+import { parseAddedLines } from "@/lib/diff"
 
 const app = new App({
   appId: process.env.GITHUB_APP_ID!,
@@ -25,16 +27,18 @@ app.webhooks.on(
     })
 
     console.log(`  ${files.length} file(s) changed`)
+
     for (const file of files) {
       // `patch` is omitted for binary files and for diffs GitHub considers too large.
-      const added = (file.patch ?? "")
-        .split("\n")
-        .filter((line) => line.startsWith("+") && !line.startsWith("+++")).length
+      if (!file.patch) continue
 
-      console.log(
-        `  ${file.status.padEnd(9)} ${file.filename}  +${file.additions}/-${file.deletions}` +
-          (file.patch ? `  (${added} added lines in patch)` : "  (no patch — binary or too large)"),
-      )
+      const syntax = commentSyntaxFor(file.filename)
+      if (!syntax) continue
+
+      for (const { line, text } of parseAddedLines(file.patch)) {
+        const comment = commentTextIn(text, syntax)
+        if (comment) console.log(`  ${file.filename}:${line}  ${comment}`)
+      }
     }
   },
 )
