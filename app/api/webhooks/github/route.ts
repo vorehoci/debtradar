@@ -1,6 +1,7 @@
 import { App } from "octokit"
-import { commentSyntaxFor, commentTextIn } from "@/lib/comments"
-import { parseAddedLines } from "@/lib/diff"
+import { classifyUnmarked } from "@/lib/classify"
+import { commentSyntaxFor } from "@/lib/comments"
+import { scanFiles } from "@/lib/todos"
 
 const app = new App({
   appId: process.env.GITHUB_APP_ID!,
@@ -26,19 +27,35 @@ app.webhooks.on(
       per_page: 100,
     })
 
-    console.log(`  ${files.length} file(s) changed`)
-
     for (const file of files) {
       // `patch` is omitted for binary files and for diffs GitHub considers too large.
-      if (!file.patch) continue
+      if (!file.patch) console.log(`  (skipped ${file.filename}: no patch)`)
+      else if (!commentSyntaxFor(file.filename)) console.log(`  (skipped ${file.filename}: unknown type)`)
+    }
 
-      const syntax = commentSyntaxFor(file.filename)
-      if (!syntax) continue
+    const candidates = scanFiles(files)
+    const marked = candidates.filter((c) => c.marker)
+    const unmarked = candidates.filter((c) => !c.marker)
 
-      for (const { line, text } of parseAddedLines(file.patch)) {
-        const comment = commentTextIn(text, syntax)
-        if (comment) console.log(`  ${file.filename}:${line}  ${comment}`)
+    console.log(`  ${files.length} file(s), ${marked.length} marked, ${unmarked.length} unmarked`)
+
+    for (const c of marked) {
+      console.log(`  [${c.marker}] ${c.file}:${c.line}  ${c.text}`)
+    }
+
+    try {
+      const verdicts = await classifyUnmarked(unmarked, files)
+      console.log(`  ${verdicts.length}/${unmarked.length} unmarked judged actionable`)
+      for (const v of verdicts) {
+        const c = unmarked[v.index]
+        console.log(
+          `  [${v.category}] ${c.file}:${c.line}  ${c.text}` +
+            `  (${v.confidence.toFixed(2)} — ${v.reason})`,
+        )
       }
+    } catch (err) {
+      // A classifier failure must not lose the regex results.
+      console.error("  classification failed:", err)
     }
   },
 )
