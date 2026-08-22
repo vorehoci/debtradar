@@ -1,3 +1,4 @@
+import { checkOutput, conclusion } from "@/lib/checks"
 import { installationClient } from "@/lib/github"
 import { inngest, scanRequested } from "@/lib/inngest"
 import { scanFiles, scanFilesRemoved } from "@/lib/todos"
@@ -19,7 +20,7 @@ export const scanPullRequest = inngest.createFunction(
     retries: 2,
   },
   async ({ event, step }) => {
-    const { installationId, owner, repo, pullNumber, title } = event.data
+    const { installationId, owner, repo, pullNumber, headSha, title } = event.data
 
     const files = await step.run("fetch-diff", async () => {
       const octokit = await installationClient(installationId)
@@ -34,14 +35,23 @@ export const scanPullRequest = inngest.createFunction(
     const added = scanFiles(files).filter((c) => c.marker)
     const removed = scanFilesRemoved(files).filter((c) => c.marker)
 
-    console.log(`\nPR #${pullNumber} "${title}" in ${owner}/${repo}`)
-    console.log(`  adds ${added.length} TODO(s), resolves ${removed.length}`)
-    for (const c of added) {
-      console.log(`  + [${c.marker}] ${c.file}:${c.line}  ${c.text}`)
-    }
-    for (const c of removed) {
-      console.log(`  - [${c.marker}] ${c.file}:${c.line}  ${c.text}`)
-    }
+    await step.run("post-check", async () => {
+      const octokit = await installationClient(installationId)
+      await octokit.rest.checks.create({
+        owner,
+        repo,
+        name: "debtradar",
+        head_sha: headSha,
+        status: "completed",
+        conclusion: conclusion(added.length, removed.length),
+        output: checkOutput({ added, resolved: removed, repo: { owner, name: repo }, sha: headSha }),
+      })
+    })
+
+    console.log(
+      `\nPR #${pullNumber} "${title}" in ${owner}/${repo} — ` +
+        `adds ${added.length}, resolves ${removed.length}`,
+    )
 
     return { added: added.length, resolved: removed.length }
   },
