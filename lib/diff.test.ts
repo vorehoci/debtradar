@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { parseAddedLines } from "./diff"
+import { parseAddedLines, parseRemovedLines } from "./diff"
 import { commentSyntaxFor, commentTextIn } from "./comments"
 
 describe("parseAddedLines", () => {
@@ -50,6 +50,40 @@ describe("parseAddedLines", () => {
 
   it("returns nothing for an empty patch", () => {
     expect(parseAddedLines("")).toEqual([])
+  })
+})
+
+describe("parseRemovedLines", () => {
+  it("numbers removals against the old file, ignoring additions", () => {
+    const patch = [
+      "@@ -10,6 +10,8 @@ export function authenticate(token: string) {",
+      "   const parsed = parseToken(token)",
+      "-  // TODO: handle expiry",
+      "-  if (!parsed) throw new Error('bad')",
+      "+  if (!parsed) return null",
+      "   return parsed",
+    ].join("\n")
+
+    expect(parseRemovedLines(patch)).toEqual([
+      { line: 11, text: "  // TODO: handle expiry" },
+      { line: 12, text: "  if (!parsed) throw new Error('bad')" },
+    ])
+  })
+
+  it("keeps the two sides independent when they drift apart", () => {
+    // Old side starts at 5, new side at 50: additions must not move the old
+    // counter, and the removal must still be numbered against the old file.
+    const patch = ["@@ -5,2 +50,2 @@", "+added", "+another", "-gone", " context"].join("\n")
+
+    expect(parseRemovedLines(patch)).toEqual([{ line: 5, text: "gone" }])
+    expect(parseAddedLines(patch)).toEqual([
+      { line: 50, text: "added" },
+      { line: 51, text: "another" },
+    ])
+  })
+
+  it("returns nothing when the patch only adds", () => {
+    expect(parseRemovedLines("@@ -1,1 +1,2 @@\n a\n+b")).toEqual([])
   })
 })
 

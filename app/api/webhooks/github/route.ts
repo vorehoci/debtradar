@@ -1,5 +1,5 @@
 import { githubApp } from "@/lib/github"
-import { inngest, scanRequested } from "@/lib/inngest"
+import { inngest, pushReceived, scanRequested } from "@/lib/inngest"
 
 const app = githubApp()
 
@@ -28,6 +28,35 @@ app.webhooks.on(
     )
   },
 )
+
+/** A branch that was just created or deleted has an all-zero sha on one side. */
+const EMPTY_SHA = "0".repeat(40)
+
+app.webhooks.on("push", async ({ payload }) => {
+  if (!payload.installation) return
+
+  // Only the default branch is real debt; other branches are proposals.
+  const defaultBranch = payload.repository.default_branch
+  if (payload.ref !== `refs/heads/${defaultBranch}`) return
+  if (payload.before === EMPTY_SHA || payload.after === EMPTY_SHA) return
+
+  // Typed as nullable, but absent only for repositories we could not act on anyway.
+  const owner = payload.repository.owner?.login ?? payload.repository.owner?.name
+  if (!owner) return
+
+  await inngest.send(
+    pushReceived.create({
+      installationId: payload.installation.id,
+      accountLogin: owner,
+      repositoryId: payload.repository.id,
+      owner,
+      repo: payload.repository.name,
+      defaultBranch,
+      beforeSha: payload.before,
+      afterSha: payload.after,
+    }),
+  )
+})
 
 export async function POST(req: Request) {
   // Read the raw body first: the signature is an HMAC over these exact bytes,

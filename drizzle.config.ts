@@ -8,5 +8,7 @@ export default defineConfig({
   schema: "./db/schema.ts",
   out: "./db/migrations",
   dialect: "postgresql",
-  dbCredentials: { url: process.env.DATABASE_URL! },
+  // Migrations need the session-mode pooler (5432): transaction mode gives a
+  // different backend per statement, which breaks migration advisory locks.
+  dbCredentials: { url: process.env.DIRECT_URL ?? process.env.DATABASE_URL! },
 })
