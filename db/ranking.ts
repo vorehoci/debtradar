@@ -20,16 +20,31 @@ export const WEIGHTS = {
   severity: 0.2,
 } as const
 
+/**
+ * Every factor is cast to float8, and the score to int, because postgres.js
+ * returns `numeric` as a *string* to preserve precision. Without the casts the
+ * `sql<number>` annotations below would be lies TypeScript happily believes,
+ * and the values would arrive as strings at runtime.
+ */
+
 /** Days old, from the true authored date — falling back to first sighting. */
 const age = sql<number>`
   least(
     extract(epoch from (now() - coalesce(${todos.authoredAt}, ${todos.firstSeenAt})))
       / 86400.0 / ${AGE_CAP_DAYS},
     1.0
-  )`
+  )::float8`
 
-/** How hot the surrounding file is. A stale TODO in a frozen file matters less. */
-const churn = sql<number>`least(coalesce(${todos.fileChurn}, 0) / ${CHURN_CAP_COMMITS}.0, 1.0)`
+/**
+ * How hot the surrounding file is. A stale TODO in a frozen file matters less.
+ *
+ * The numerator is cast rather than written as `50.0`: interpolated values
+ * become bind parameters, so a decimal suffix would land after the `$n`.
+ */
+const churn = sql<number>`least(
+  coalesce(${todos.fileChurn}, 0)::numeric / ${CHURN_CAP_COMMITS},
+  1.0
+)::float8`
 
 /**
  * How long since the author last touched this repo. Nobody left to ask is what
@@ -42,7 +57,7 @@ const orphan = sql<number>`
       extract(epoch from (now() - ${todos.authorLastActiveAt})) / 86400.0 / ${ORPHAN_CAP_DAYS},
       1.0
     )
-  end`
+  end::float8`
 
 /**
  * What the marker admits to. FIXME/HACK/BUG concede something is wrong; TODO is
@@ -53,14 +68,14 @@ const severity = sql<number>`
     when ${todos.marker} in ('FIXME', 'BUG', 'HACK', 'XXX') then 1.0
     when ${todos.marker} in ('TODO', 'OPTIMIZE', 'REFACTOR') then 0.6
     else coalesce(${todos.confidence}, 0.5) * 0.7
-  end`
+  end::float8`
 
 const score = sql<number>`round((
   ${WEIGHTS.age} * ${age} +
   ${WEIGHTS.churn} * ${churn} +
   ${WEIGHTS.orphan} * ${orphan} +
   ${WEIGHTS.severity} * ${severity}
-) * 100)`
+)::numeric * 100)::int`
 
 /**
  * Open TODOs for a repository, worst first.

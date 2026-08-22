@@ -48,6 +48,41 @@ export async function ensureRepository(params: {
     })
 }
 
+export async function listRepositories() {
+  return (
+    db
+      .select({
+        id: repositories.id,
+        owner: repositories.owner,
+        name: repositories.name,
+        defaultBranch: repositories.defaultBranch,
+        // The `todos.id is not null` guard matters: a repository with no rows
+        // still produces one all-null row from the left join, and that row's
+        // resolved_at is null, so it would otherwise count as an open TODO.
+        open: sql<number>`count(*) filter (
+          where ${todos.id} is not null and ${todos.resolvedAt} is null
+        )::int`,
+        resolved: sql<number>`count(*) filter (where ${todos.resolvedAt} is not null)::int`,
+      })
+      .from(repositories)
+      // A join rather than correlated subqueries: inside a raw subquery Drizzle
+      // emits unqualified column names, which then bind to the wrong table.
+      .leftJoin(todos, eq(todos.repositoryId, repositories.id))
+      .groupBy(
+        repositories.id,
+        repositories.owner,
+        repositories.name,
+        repositories.defaultBranch,
+      )
+      .orderBy(repositories.owner, repositories.name)
+  )
+}
+
+export async function getRepository(id: number) {
+  const [row] = await db.select().from(repositories).where(eq(repositories.id, id)).limit(1)
+  return row ?? null
+}
+
 export interface PendingTodo {
   id: string
   filePath: string
