@@ -48,6 +48,68 @@ export async function ensureRepository(params: {
     })
 }
 
+export interface PendingTodo {
+  id: string
+  filePath: string
+  line: number
+}
+
+/** Open TODOs in this repo that enrichment has not touched yet. */
+export async function unenrichedTodos(
+  repositoryId: number,
+  limit = 200,
+): Promise<PendingTodo[]> {
+  return db
+    .select({ id: todos.id, filePath: todos.filePath, line: todos.line })
+    .from(todos)
+    .where(
+      and(
+        eq(todos.repositoryId, repositoryId),
+        isNull(todos.enrichedAt),
+        isNull(todos.resolvedAt),
+      ),
+    )
+    .limit(limit)
+}
+
+export interface Enrichment {
+  id: string
+  authorLogin: string | null
+  authoredSha: string | null
+  authoredAt: Date | null
+  authorLastActiveAt: Date | null
+  fileChurn: number | null
+}
+
+/**
+ * Writes enrichment results back.
+ *
+ * `enrichedAt` is set even when blame returned nothing, so a file that cannot
+ * be blamed does not get retried on every subsequent scan forever.
+ */
+export async function applyEnrichment(rows: Enrichment[]): Promise<number> {
+  if (rows.length === 0) return 0
+  const now = new Date()
+
+  await db.transaction(async (tx) => {
+    for (const row of rows) {
+      await tx
+        .update(todos)
+        .set({
+          authorLogin: row.authorLogin,
+          authoredSha: row.authoredSha,
+          authoredAt: row.authoredAt,
+          authorLastActiveAt: row.authorLastActiveAt,
+          fileChurn: row.fileChurn,
+          enrichedAt: now,
+        })
+        .where(eq(todos.id, row.id))
+    }
+  })
+
+  return rows.length
+}
+
 /**
  * Applies one scan of the default branch: comments still present are upserted,
  * comments the diff removed are marked resolved.

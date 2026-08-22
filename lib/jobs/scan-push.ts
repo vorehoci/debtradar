@@ -1,7 +1,7 @@
 import { ensureRepository, type FoundTodo, recordScan } from "@/db/repository"
 import { classifyUnmarked } from "@/lib/classify"
 import { installationClient } from "@/lib/github"
-import { inngest, pushReceived } from "@/lib/inngest"
+import { enrichRequested, inngest, pushReceived } from "@/lib/inngest"
 import { scanFiles, scanFilesRemoved } from "@/lib/todos"
 
 export const scanPush = inngest.createFunction(
@@ -63,6 +63,12 @@ export const scanPush = inngest.createFunction(
       })
       return recordScan({ repositoryId, sha: afterSha, found, removed })
     })
+
+    // Enrichment runs separately: blame is slow and can fail on its own without
+    // costing us the scan we just persisted.
+    await step.sendEvent("request-enrichment", [
+      enrichRequested.create({ installationId, repositoryId, owner, repo, ref: afterSha }),
+    ])
 
     console.log(
       `\npush ${owner}/${repo}@${afterSha.slice(0, 7)} — ` +

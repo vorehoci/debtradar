@@ -7,6 +7,18 @@ export const inngest = new Inngest({ id: "debtradar" })
  * Emitted when a PR needs scanning. Doubles as the function's trigger and as
  * the factory for sending one, so the shape is declared exactly once.
  */
+/** Emitted after a scan, to fill in blame, churn, and author activity. */
+export const enrichRequested = eventType("todos/enrich.requested", {
+  schema: z.object({
+    installationId: z.number(),
+    repositoryId: z.number(),
+    owner: z.string(),
+    repo: z.string(),
+    /** Commit to blame against — the scan's head. */
+    ref: z.string(),
+  }),
+})
+
 /** Emitted on a push to a repository's default branch — the durable scan. */
 export const pushReceived = eventType("push/default-branch.received", {
   schema: z.object({

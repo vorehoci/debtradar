@@ -58,6 +58,20 @@ export const todos = pgTable(
 
     /** From git blame. Null until enrichment runs. */
     authorLogin: text("author_login"),
+    /** The commit blame attributes this line to. */
+    authoredSha: text("authored_sha"),
+    /**
+     * When the comment was actually written — which is not `firstSeenAt`, the
+     * moment debtradar noticed it. A TODO from 2019 in a repo installed today
+     * has a firstSeenAt of today, so age must come from here.
+     */
+    authoredAt: timestamp("authored_at", { withTimezone: true }),
+    /** Most recent commit by this author in this repo; stale means orphaned. */
+    authorLastActiveAt: timestamp("author_last_active_at", { withTimezone: true }),
+    /** Commits touching this file in the last year — how hot the surrounding code is. */
+    fileChurn: integer("file_churn"),
+    /** Null means enrichment has not run for this row yet. */
+    enrichedAt: timestamp("enriched_at", { withTimezone: true }),
 
     firstSeenSha: text("first_seen_sha").notNull(),
     firstSeenAt: timestamp("first_seen_at", { withTimezone: true }).notNull(),
@@ -72,6 +86,8 @@ export const todos = pgTable(
     uniqueIndex("todos_identity").on(table.repositoryId, table.fingerprint),
     // The dashboard's main query: open TODOs for a repo, oldest first.
     index("todos_open").on(table.repositoryId, table.resolvedAt, table.firstSeenAt),
+    // The enrichment job's work queue.
+    index("todos_unenriched").on(table.repositoryId, table.enrichedAt),
   ],
 )
 
