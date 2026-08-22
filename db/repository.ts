@@ -48,7 +48,11 @@ export async function ensureRepository(params: {
     })
 }
 
-export async function listRepositories() {
+export async function listRepositories(installationIds: number[]) {
+  // An empty allow-list must return nothing, not everything — an `inArray` with
+  // no values is the classic way to accidentally drop a filter entirely.
+  if (installationIds.length === 0) return []
+
   return (
     db
       .select({
@@ -68,6 +72,7 @@ export async function listRepositories() {
       // A join rather than correlated subqueries: inside a raw subquery Drizzle
       // emits unqualified column names, which then bind to the wrong table.
       .leftJoin(todos, eq(todos.repositoryId, repositories.id))
+      .where(inArray(repositories.installationId, installationIds))
       .groupBy(
         repositories.id,
         repositories.owner,
@@ -78,8 +83,23 @@ export async function listRepositories() {
   )
 }
 
-export async function getRepository(id: number) {
-  const [row] = await db.select().from(repositories).where(eq(repositories.id, id)).limit(1)
+/**
+ * Fetches a repository only if it belongs to one of the caller's installations.
+ *
+ * The access check lives in the query rather than in the page: a repository id
+ * is a guessable URL, so filtering the list without also filtering the detail
+ * lookup would leave every repo readable by anyone who typed the right number.
+ */
+export async function getRepository(id: number, installationIds: number[]) {
+  if (installationIds.length === 0) return null
+
+  const [row] = await db
+    .select()
+    .from(repositories)
+    .where(
+      and(eq(repositories.id, id), inArray(repositories.installationId, installationIds)),
+    )
+    .limit(1)
   return row ?? null
 }
 

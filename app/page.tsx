@@ -1,18 +1,38 @@
 import Link from "next/link"
+import { auth } from "@/auth"
 import { listRepositories } from "@/db/repository"
+import { accessibleInstallationIds } from "@/lib/access"
+import { SignIn, SignOut } from "./auth-buttons"
 
 export const dynamic = "force-dynamic"
 
 export default async function Home() {
-  const repos = await listRepositories()
+  const session = await auth()
+
+  if (!session?.accessToken) {
+    return (
+      <main className="mx-auto w-full max-w-3xl px-6 py-16">
+        <h1 className="text-2xl font-semibold tracking-tight">debtradar</h1>
+        <p className="mt-1 mb-8 text-sm text-neutral-500 dark:text-neutral-400">
+          TODOs ranked by how much they are likely to hurt.
+        </p>
+        <SignIn />
+      </main>
+    )
+  }
+
+  const repos = await listRepositories(await accessibleInstallationIds(session.accessToken))
 
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-16">
-      <header className="mb-10">
-        <h1 className="text-2xl font-semibold tracking-tight">debtradar</h1>
-        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-          TODOs ranked by how much they are likely to hurt.
-        </p>
+      <header className="mb-10 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">debtradar</h1>
+          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+            TODOs ranked by how much they are likely to hurt.
+          </p>
+        </div>
+        <SignOut label={session.user?.name ?? "signed in"} />
       </header>
 
       {repos.length === 0 ? (

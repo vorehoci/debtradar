@@ -1,7 +1,9 @@
 import Link from "next/link"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
+import { auth } from "@/auth"
 import { rankedTodos, type RankedTodo } from "@/db/ranking"
 import { getRepository } from "@/db/repository"
+import { accessibleInstallationIds } from "@/lib/access"
 import { age, blobUrl } from "@/lib/format"
 
 export const dynamic = "force-dynamic"
@@ -85,11 +87,19 @@ function Row({
 }
 
 export default async function RepoPage({ params }: { params: Promise<{ id: string }> }) {
+  const session = await auth()
+  if (!session?.accessToken) redirect("/")
+
   const { id } = await params
   const repositoryId = Number(id)
   if (!Number.isFinite(repositoryId)) notFound()
 
-  const repo = await getRepository(repositoryId)
+  // Returns null both for a repository that does not exist and for one this
+  // user may not see — deliberately indistinguishable from outside.
+  const repo = await getRepository(
+    repositoryId,
+    await accessibleInstallationIds(session.accessToken),
+  )
   if (!repo) notFound()
 
   const todos = await rankedTodos(repositoryId)
