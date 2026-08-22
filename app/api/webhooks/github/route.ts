@@ -1,11 +1,47 @@
 import { githubApp } from "@/lib/github"
-import { inngest, pushReceived, scanRequested } from "@/lib/inngest"
+import { inngest, pushReceived, scanRequested, seedRequested } from "@/lib/inngest"
 
 const app = githubApp()
 
-app.webhooks.on("installation.created", ({ payload }) => {
-  const repos = payload.repositories?.map((r) => r.full_name).join(", ") ?? "none"
-  console.log(`[installed] on ${repos}`)
+/**
+ * Seeding on install is what makes a mature repository show anything at all —
+ * the diff scanners only ever see changed lines, so without this a new
+ * installation looks empty until someone happens to touch a file.
+ */
+async function seedAll(
+  installationId: number,
+  accountLogin: string,
+  repos: { id: number; name: string }[],
+) {
+  if (repos.length === 0) return
+  await inngest.send(
+    repos.map((repo) =>
+      seedRequested.create({
+        installationId,
+        accountLogin,
+        repositoryId: repo.id,
+        owner: accountLogin,
+        repo: repo.name,
+      }),
+    ),
+  )
+}
+
+app.webhooks.on("installation.created", async ({ payload }) => {
+  const account = payload.installation.account
+  const login = account && "login" in account ? account.login : undefined
+  if (!login) return
+
+  console.log(`[installed] on ${payload.repositories?.length ?? 0} repo(s) for ${login}`)
+  await seedAll(payload.installation.id, login, payload.repositories ?? [])
+})
+
+app.webhooks.on("installation_repositories.added", async ({ payload }) => {
+  const account = payload.installation.account
+  const login = account && "login" in account ? account.login : undefined
+  if (!login) return
+
+  await seedAll(payload.installation.id, login, payload.repositories_added ?? [])
 })
 
 app.webhooks.on(

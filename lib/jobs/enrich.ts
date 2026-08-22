@@ -3,6 +3,9 @@ import { type BlameEntry, authorLastActive, blameFile, fileChurn } from "@/lib/b
 import { installationClient } from "@/lib/github"
 import { enrichRequested, inngest } from "@/lib/inngest"
 
+/** Rows per run — bounded so one invocation cannot run unboundedly long. */
+const BATCH = 200
+
 export const enrichTodos = inngest.createFunction(
   {
     id: "enrich-todos",
@@ -14,7 +17,7 @@ export const enrichTodos = inngest.createFunction(
   async ({ event, step }) => {
     const { installationId, repositoryId, owner, repo, ref } = event.data
 
-    const pending = await step.run("load-pending", () => unenrichedTodos(repositoryId))
+    const pending = await step.run("load-pending", () => unenrichedTodos(repositoryId, BATCH))
     if (pending.length === 0) return { enriched: 0 }
 
     // Fetching and persisting live in one step on purpose: step boundaries
@@ -78,7 +81,15 @@ export const enrichTodos = inngest.createFunction(
       return results.length
     })
 
+    // A seeded repository can hold thousands of rows; a full batch means there
+    // are probably more, so the job re-queues itself rather than stopping short.
+    if (pending.length === BATCH) {
+      await step.sendEvent("continue-enrichment", [
+        enrichRequested.create({ installationId, repositoryId, owner, repo, ref }),
+      ])
+    }
+
     console.log(`enriched ${enriched} TODO(s) in ${owner}/${repo}`)
-    return { enriched }
+    return { enriched, more: pending.length === BATCH }
   },
 )

@@ -49,6 +49,20 @@ function scanLines(filename: string, lines: DiffLine[]): CommentCandidate[] {
   return found
 }
 
+/**
+ * Every comment in a whole file, for seeding a repository at install time.
+ *
+ * The diff scanners only ever see changed lines, which means a freshly
+ * installed repo would show nothing until someone happened to touch a file —
+ * and every TODO it did find would look brand new.
+ */
+export function scanSource(filename: string, source: string): CommentCandidate[] {
+  return scanLines(
+    filename,
+    source.split("\n").map((text, index) => ({ line: index + 1, text })),
+  )
+}
+
 /** Every comment added by this patch, each tagged with its marker or null. */
 export function scanPatch(filename: string, patch: string): CommentCandidate[] {
   return scanLines(filename, parseAddedLines(patch))
