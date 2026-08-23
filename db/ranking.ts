@@ -1,4 +1,5 @@
 import { and, desc, eq, isNull, sql } from "drizzle-orm"
+import { WEIGHTS } from "@/lib/describe"
 import { db } from "./index"
 import { todos } from "./schema"
 
@@ -25,13 +26,9 @@ const ORPHAN_CAP_DAYS = 365
 /** Authors that never come back but were never really here either. */
 const BOT_PATTERN = "(bot|greenkeeper|renovate|dependabot)"
 
-/** Weights sum to 1, so the score lands in 0–100. */
-export const WEIGHTS = {
-  age: 0.3,
-  churn: 0.25,
-  orphan: 0.2,
-  severity: 0.25,
-} as const
+// WEIGHTS lives in lib/describe.ts so the UI can explain a score without
+// importing this module — which would drag a database connection into pages
+// and tests that only need the arithmetic.
 
 /**
  * Every factor is cast to float8, and the score to int, because postgres.js
@@ -88,7 +85,12 @@ const severity = sql<number>`
     else coalesce(${todos.confidence}, 0.5) * 0.7
   end::float8`
 
-const score = sql<number>`round((
+/**
+ * Exported so the repository list can count band membership without
+ * reimplementing the formula — two copies would drift the first time a weight
+ * changed, and the list would quietly disagree with the detail page.
+ */
+export const scoreExpression = sql<number>`round((
   ${WEIGHTS.age} * ${age} +
   ${WEIGHTS.churn} * ${churn} +
   ${WEIGHTS.orphan} * ${orphan} +
@@ -113,9 +115,10 @@ export async function rankedTodos(repositoryId: number, limit = 50) {
       marker: todos.marker,
       category: todos.category,
       authorLogin: todos.authorLogin,
+      authorLastActiveAt: todos.authorLastActiveAt,
       authoredAt: todos.authoredAt,
       fileChurn: todos.fileChurn,
-      score,
+      score: scoreExpression,
       ageFactor: age,
       churnFactor: churn,
       orphanFactor: orphan,
@@ -123,7 +126,7 @@ export async function rankedTodos(repositoryId: number, limit = 50) {
     })
     .from(todos)
     .where(and(eq(todos.repositoryId, repositoryId), isNull(todos.resolvedAt)))
-    .orderBy(desc(score))
+    .orderBy(desc(scoreExpression))
     .limit(limit)
 }
 

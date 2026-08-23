@@ -1,5 +1,7 @@
 import { and, eq, inArray, isNull, sql } from "drizzle-orm"
+import { BAND_THRESHOLDS } from "@/lib/describe"
 import { fingerprint } from "@/lib/fingerprint"
+import { scoreExpression } from "./ranking"
 import type { CommentCandidate } from "@/lib/todos"
 import { db } from "./index"
 import { installations, repositories, todos } from "./schema"
@@ -67,6 +69,19 @@ export async function listRepositories(installationIds: number[]) {
           where ${todos.id} is not null and ${todos.resolvedAt} is null
         )::int`,
         resolved: sql<number>`count(*) filter (where ${todos.resolvedAt} is not null)::int`,
+        // The `todos.id is not null` guard is load-bearing in every one of
+        // these: Postgres `least(NULL, 1.0)` returns 1.0, so the all-null row a
+        // left join produces for an empty repository would otherwise score as
+        // maximally aged and be counted as critical.
+        critical: sql<number>`count(*) filter (
+          where ${todos.id} is not null and ${todos.resolvedAt} is null
+            and ${scoreExpression} >= ${BAND_THRESHOLDS.critical}
+        )::int`,
+        high: sql<number>`count(*) filter (
+          where ${todos.id} is not null and ${todos.resolvedAt} is null
+            and ${scoreExpression} >= ${BAND_THRESHOLDS.high}
+            and ${scoreExpression} < ${BAND_THRESHOLDS.critical}
+        )::int`,
       })
       .from(repositories)
       // A join rather than correlated subqueries: inside a raw subquery Drizzle

@@ -2,6 +2,7 @@ import Link from "next/link"
 import { auth } from "@/auth"
 import { listRepositories } from "@/db/repository"
 import { accessibleInstallationIds, GitHubAuthError } from "@/lib/access"
+import { describeRepo } from "@/lib/describe"
 import { SignIn, SignOut } from "./auth-buttons"
 
 export const dynamic = "force-dynamic"
@@ -68,15 +69,22 @@ export default async function Home() {
                 className="flex items-center justify-between rounded-lg border border-neutral-200 px-5 py-4 transition-colors hover:border-neutral-400 dark:border-neutral-800 dark:hover:border-neutral-600"
               >
                 <div>
-                  <span className="text-neutral-500 dark:text-neutral-400">{repo.owner}/</span>
-                  <span className="font-medium">{repo.name}</span>
+                  <div>
+                    <span className="text-neutral-500 dark:text-neutral-400">{repo.owner}/</span>
+                    <span className="font-medium">{repo.name}</span>
+                  </div>
+                  {/* Bands rather than a score: "nothing urgent" is reassuring
+                      where "22/100" reads like a failing grade. */}
+                  <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
+                    {describeRepo(repo)}
+                  </p>
                 </div>
-                <div className="flex items-center gap-4 text-sm tabular-nums">
-                  <span title="Open TODOs">{repo.open} open</span>
-                  <span className="text-neutral-400 dark:text-neutral-500" title="Resolved">
-                    {repo.resolved} resolved
-                  </span>
-                </div>
+                <span
+                  className="shrink-0 text-xs text-neutral-400 tabular-nums dark:text-neutral-500"
+                  title="Resolved since debtradar started watching"
+                >
+                  {repo.resolved} resolved
+                </span>
               </Link>
             </li>
           ))}
