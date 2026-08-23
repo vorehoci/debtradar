@@ -151,6 +151,14 @@ export async function rankedTodos(repositoryId: number, query: TodoQuery = {}) {
       manualBandBy: todos.manualBandBy,
       manualBandAt: todos.manualBandAt,
       band: effectiveBand,
+      fixable: todos.fixable,
+      fixScope: todos.fixScope,
+      fixSummary: todos.fixSummary,
+      fixConfidence: todos.fixConfidence,
+      fixAnalyzedSha: todos.fixAnalyzedSha,
+      // Compared against fixAnalyzedSha so the panel can tell a current verdict
+      // from one made against code that has since changed.
+      lastSeenSha: todos.lastSeenSha,
       authoredAt: todos.authoredAt,
       fileChurn: todos.fileChurn,
       score: scoreExpression,

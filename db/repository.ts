@@ -194,6 +194,83 @@ export async function addComment(params: {
   return row ? { repositoryId: Number(row.repository_id) } : null
 }
 
+export interface TodoForAnalysis {
+  id: string
+  repositoryId: number
+  installationId: number
+  owner: string
+  name: string
+  defaultBranch: string
+  filePath: string
+  line: number
+  text: string
+  marker: string | null
+  lastSeenSha: string
+  fixAnalyzedSha: string | null
+}
+
+/**
+ * A TODO plus the installation needed to read its file, or null when the caller
+ * has no access.
+ *
+ * The join both fetches and authorises: there is no version of this that
+ * returns a row the caller may not see.
+ */
+export async function todoForAnalysis(
+  todoId: string,
+  installationIds: number[],
+): Promise<TodoForAnalysis | null> {
+  if (installationIds.length === 0) return null
+
+  const [row] = await db
+    .select({
+      id: todos.id,
+      repositoryId: todos.repositoryId,
+      installationId: repositories.installationId,
+      owner: repositories.owner,
+      name: repositories.name,
+      defaultBranch: repositories.defaultBranch,
+      filePath: todos.filePath,
+      line: todos.line,
+      text: todos.text,
+      marker: todos.marker,
+      lastSeenSha: todos.lastSeenSha,
+      fixAnalyzedSha: todos.fixAnalyzedSha,
+    })
+    .from(todos)
+    .innerJoin(repositories, eq(repositories.id, todos.repositoryId))
+    .where(
+      and(
+        eq(todos.id, todoId),
+        inArray(repositories.installationId, installationIds),
+      ),
+    )
+    .limit(1)
+
+  return row ?? null
+}
+
+export async function saveFixAnalysis(params: {
+  todoId: string
+  sha: string
+  fixable: boolean
+  scope: string
+  summary: string
+  confidence: number
+}): Promise<void> {
+  await db
+    .update(todos)
+    .set({
+      fixable: params.fixable,
+      fixScope: params.scope,
+      fixSummary: params.summary,
+      fixConfidence: params.confidence,
+      fixAnalyzedAt: new Date(),
+      fixAnalyzedSha: params.sha,
+    })
+    .where(eq(todos.id, params.todoId))
+}
+
 export interface PendingTodo {
   id: string
   filePath: string

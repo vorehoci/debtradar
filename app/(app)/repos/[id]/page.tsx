@@ -1,14 +1,21 @@
 import { notFound, redirect } from "next/navigation"
 import { rankedTodos, todoCounts } from "@/db/ranking"
 import { commentsFor } from "@/db/repository"
-import type { Band } from "@/lib/describe"
+import { type Band, BANDS } from "@/lib/describe"
 import { currentRepositories } from "@/lib/session-repos"
 import { Board } from "./board-client"
 
 export const dynamic = "force-dynamic"
 
-/** Low is omitted: a board is for triage, and nobody triages the bottom band. */
-const COLUMNS: Band[] = ["critical", "high", "moderate"]
+/**
+ * All four bands, including low.
+ *
+ * Low was left out while a list view existed to reach it. Now that the board is
+ * the only view, omitting a band would make those TODOs unreachable — and since
+ * the severity dropdown can move an item *into* low, it would also be a
+ * one-way trip with no way to undo it.
+ */
+const COLUMNS: Band[] = BANDS
 
 /** Deep enough to be useful, shallow enough that a column stays scannable. */
 const PER_COLUMN = 20

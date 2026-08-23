@@ -1,4 +1,5 @@
 import {
+  boolean,
   bigint,
   index,
   integer,
@@ -92,6 +93,21 @@ export const todos = pgTable(
     manualBand: text("manual_band"),
     manualBandBy: text("manual_band_by"),
     manualBandAt: timestamp("manual_band_at", { withTimezone: true }),
+
+    /**
+     * Claude's read on whether this TODO is actionable.
+     *
+     * Cached on the row because the analysis costs real money per click and the
+     * answer only changes when the surrounding code does — `fixAnalyzedSha`
+     * records which commit it was judged against, so a stale verdict is
+     * recognisable rather than merely old.
+     */
+    fixable: boolean("fixable"),
+    fixScope: text("fix_scope"),
+    fixSummary: text("fix_summary"),
+    fixConfidence: real("fix_confidence"),
+    fixAnalyzedAt: timestamp("fix_analyzed_at", { withTimezone: true }),
+    fixAnalyzedSha: text("fix_analyzed_sha"),
   },
   (table) => [
     // The upsert target: one row per distinct comment per repo.

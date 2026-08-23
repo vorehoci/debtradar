@@ -12,7 +12,7 @@ import {
 import { blobUrl, formatDate, formatDateTime } from "@/lib/format"
 import type { RankedTodo } from "@/db/ranking"
 import { MAX_COMMENT_LENGTH, type TodoCommentRow } from "@/lib/todo-comments"
-import { postComment, updateSeverity } from "./actions"
+import { analyseTodo, postComment, updateSeverity } from "./actions"
 import { ManualMark } from "./manual-mark"
 
 type Repo = { owner: string; name: string; defaultBranch: string }
@@ -150,6 +150,79 @@ function Comments({ todoId, comments }: { todoId: string; comments: TodoCommentR
   )
 }
 
+function FixAnalysis({ todo }: { todo: RankedTodo }) {
+  const [pending, startTransition] = useTransition()
+  const [problem, setProblem] = useState<string | null>(null)
+
+  const analysed = todo.fixAnalyzedSha !== null
+  const stale = analysed && todo.fixAnalyzedSha !== todo.lastSeenSha
+
+  function run() {
+    setProblem(null)
+    startTransition(async () => {
+      try {
+        const result = await analyseTodo(todo.id)
+        if (result.state === "rate-limited") {
+          setProblem(
+            `Analysis limit reached. Try again in about ${Math.ceil(result.resetInSeconds / 60)} minutes.`,
+          )
+        } else if (result.state === "unreadable") {
+          setProblem("That file could not be read — it may have moved or been deleted.")
+        }
+      } catch {
+        setProblem("The analysis failed. Try again shortly.")
+      }
+    })
+  }
+
+  return (
+    <section className="mt-6 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+      {analysed ? (
+        <div className="mb-3">
+          <div className="flex items-center gap-2">
+            <span
+              className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
+                todo.fixable
+                  ? "bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300"
+                  : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
+              }`}
+            >
+              {todo.fixable ? "Actionable" : "Not actionable"}
+            </span>
+            {todo.fixScope ? (
+              <span className="text-[11px] text-neutral-400">{todo.fixScope}</span>
+            ) : null}
+            {todo.fixConfidence !== null ? (
+              <span className="text-[11px] tabular-nums text-neutral-400">
+                {todo.fixConfidence.toFixed(2)}
+              </span>
+            ) : null}
+          </div>
+
+          <p className="mt-2 text-xs text-neutral-700 dark:text-neutral-300">{todo.fixSummary}</p>
+
+          {stale ? (
+            <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-500">
+              Judged against an older commit — the file has changed since.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      <button
+        type="button"
+        onClick={run}
+        disabled={pending}
+        className="w-full rounded bg-violet-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-violet-700 disabled:opacity-50"
+      >
+        {pending ? "Analysing…" : analysed ? "Re-analyse with Claude" : "Analyse with Claude"}
+      </button>
+
+      {problem ? <p className="mt-1 text-[11px] text-red-600">{problem}</p> : null}
+    </section>
+  )
+}
+
 function Panel({
   todo,
   repo,
@@ -186,6 +259,8 @@ function Panel({
       </p>
 
       <p className="mt-4 text-xs text-neutral-600 dark:text-neutral-300">{describeRisk(todo)}</p>
+
+      <FixAnalysis todo={todo} />
 
       <label className="mt-6 block">
         <span className="text-xs font-medium">Severity</span>
