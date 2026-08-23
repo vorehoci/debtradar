@@ -4,7 +4,7 @@
     {
       "name": "debtradar",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": ["run", "dev:next"],
       "port": 3000
     }
   ]
