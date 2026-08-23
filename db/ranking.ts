@@ -3,21 +3,34 @@ import { db } from "./index"
 import { todos } from "./schema"
 
 /**
- * Caps turn unbounded quantities into 0–1 factors. Past the cap, more is not
- * meaningfully worse: a TODO that is four years old and one that is two years
- * old are both simply ancient, and letting age run away would drown out every
- * other signal.
+ * Caps turn unbounded quantities into 0–1 factors.
+ *
+ * Calibrated against 397 TODOs in TryGhost/Ghost (2026-08-23), where the
+ * distributions were: age p25/p50/p90 = 929/1433/3394 days, churn = 1/2/14
+ * commits per year, orphan = 3/45/1158 days. The original guesses of 365 and 50
+ * were both wrong — age saturated above the 25th percentile, and churn scored
+ * the median file at 0.04, so neither discriminated.
  */
-const AGE_CAP_DAYS = 365
-const CHURN_CAP_COMMITS = 50
-const ORPHAN_CAP_DAYS = 180
+const AGE_CAP_DAYS = 3650
+const CHURN_CAP_COMMITS = 100
+/**
+ * A year, not six months. Verified against a second repository (cal.com,
+ * median author inactive 157 days vs Ghost's 3): at 180 days cal.com's orphan
+ * factor averaged 0.89 with a standard deviation of 0.10 — a near-constant
+ * offset that discriminated nothing. A year halves the pinning and doubles the
+ * spread there, while leaving Ghost unchanged.
+ */
+const ORPHAN_CAP_DAYS = 365
+
+/** Authors that never come back but were never really here either. */
+const BOT_PATTERN = "(bot|greenkeeper|renovate|dependabot)"
 
 /** Weights sum to 1, so the score lands in 0–100. */
 export const WEIGHTS = {
-  age: 0.35,
+  age: 0.3,
   churn: 0.25,
   orphan: 0.2,
-  severity: 0.2,
+  severity: 0.25,
 } as const
 
 /**
@@ -41,9 +54,9 @@ const age = sql<number>`
  * The numerator is cast rather than written as `50.0`: interpolated values
  * become bind parameters, so a decimal suffix would land after the `$n`.
  */
-const churn = sql<number>`least(
-  coalesce(${todos.fileChurn}, 0)::numeric / ${CHURN_CAP_COMMITS},
-  1.0
+const churn = sql<number>`(
+  ln(1 + least(coalesce(${todos.fileChurn}, 0), ${CHURN_CAP_COMMITS}))
+  / ln(1 + ${CHURN_CAP_COMMITS})
 )::float8`
 
 /**
@@ -52,7 +65,12 @@ const churn = sql<number>`least(
  */
 const orphan = sql<number>`
   case
-    when ${todos.authorLastActiveAt} is null then 1.0
+    -- Unknown is not the same as gone. Blame cannot always map a commit to an
+    -- account, and a bot's silence says nothing, so both score neutral rather
+    -- than maximally orphaned — which previously put a Greenkeeper TODO first.
+    when ${todos.authorLogin} is null then 0.5
+    when ${todos.authorLogin} ~* ${BOT_PATTERN} then 0.5
+    when ${todos.authorLastActiveAt} is null then 0.5
     else least(
       extract(epoch from (now() - ${todos.authorLastActiveAt})) / 86400.0 / ${ORPHAN_CAP_DAYS},
       1.0

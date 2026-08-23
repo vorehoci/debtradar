@@ -3,8 +3,15 @@ import { type BlameEntry, authorLastActive, blameFile, fileChurn } from "@/lib/b
 import { installationClient } from "@/lib/github"
 import { enrichRequested, inngest } from "@/lib/inngest"
 
-/** Rows per run — bounded so one invocation cannot run unboundedly long. */
-const BATCH = 200
+/**
+ * Rows per run.
+ *
+ * Blame costs roughly a second per file, and Inngest invokes functions over
+ * HTTP — so a large batch turns into a multi-minute request that times out,
+ * rolls back, and retries forever without committing anything. Small batches
+ * plus the self-requeue below trade round-trips for actually finishing.
+ */
+const BATCH = 25
 
 export const enrichTodos = inngest.createFunction(
   {
