@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { rankedTodos, type RankedTodo } from "@/db/ranking"
 import { getRepository } from "@/db/repository"
-import { accessibleInstallationIds } from "@/lib/access"
+import { accessibleInstallationIds, GitHubAuthError } from "@/lib/access"
 import { age, blobUrl } from "@/lib/format"
 
 export const dynamic = "force-dynamic"
@@ -94,12 +94,18 @@ export default async function RepoPage({ params }: { params: Promise<{ id: strin
   const repositoryId = Number(id)
   if (!Number.isFinite(repositoryId)) notFound()
 
+  let installationIds: number[]
+  try {
+    installationIds = await accessibleInstallationIds(session.accessToken)
+  } catch (error) {
+    // An expired token sends the reader home, where the sign-in prompt explains.
+    if (error instanceof GitHubAuthError) redirect("/")
+    throw error
+  }
+
   // Returns null both for a repository that does not exist and for one this
   // user may not see — deliberately indistinguishable from outside.
-  const repo = await getRepository(
-    repositoryId,
-    await accessibleInstallationIds(session.accessToken),
-  )
+  const repo = await getRepository(repositoryId, installationIds)
   if (!repo) notFound()
 
   const todos = await rankedTodos(repositoryId)
