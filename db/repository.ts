@@ -1,10 +1,11 @@
 import { and, eq, inArray, isNull, sql } from "drizzle-orm"
-import { BAND_THRESHOLDS } from "@/lib/describe"
+import type { Band } from "@/lib/describe"
 import { fingerprint } from "@/lib/fingerprint"
-import { scoreExpression } from "./ranking"
+import { effectiveBand } from "./ranking"
+import { MAX_COMMENT_LENGTH, type TodoCommentRow } from "@/lib/todo-comments"
 import type { CommentCandidate } from "@/lib/todos"
 import { db } from "./index"
-import { installations, repositories, todos } from "./schema"
+import { installations, repositories, todoComments, todos } from "./schema"
 
 export interface FoundTodo extends CommentCandidate {
   category?: string | null
@@ -69,18 +70,20 @@ export async function listRepositories(installationIds: number[]) {
           where ${todos.id} is not null and ${todos.resolvedAt} is null
         )::int`,
         resolved: sql<number>`count(*) filter (where ${todos.resolvedAt} is not null)::int`,
-        // The `todos.id is not null` guard is load-bearing in every one of
-        // these: Postgres `least(NULL, 1.0)` returns 1.0, so the all-null row a
-        // left join produces for an empty repository would otherwise score as
-        // maximally aged and be counted as critical.
+        // Counted by effective band, not by score range, so a repository whose
+        // TODOs were raised by hand reports what the board actually shows.
+        //
+        // The `todos.id is not null` guard is load-bearing in both: Postgres
+        // `least(NULL, 1.0)` returns 1.0, so the all-null row a left join
+        // produces for an empty repository would otherwise score as maximally
+        // aged and be counted as critical.
         critical: sql<number>`count(*) filter (
           where ${todos.id} is not null and ${todos.resolvedAt} is null
-            and ${scoreExpression} >= ${BAND_THRESHOLDS.critical}
+            and ${effectiveBand} = 'critical'
         )::int`,
         high: sql<number>`count(*) filter (
           where ${todos.id} is not null and ${todos.resolvedAt} is null
-            and ${scoreExpression} >= ${BAND_THRESHOLDS.high}
-            and ${scoreExpression} < ${BAND_THRESHOLDS.critical}
+            and ${effectiveBand} = 'high'
         )::int`,
       })
       .from(repositories)
@@ -99,23 +102,96 @@ export async function listRepositories(installationIds: number[]) {
 }
 
 /**
- * Fetches a repository only if it belongs to one of the caller's installations.
+ * Sets or clears a human-chosen band, returning null when the caller may not
+ * touch this row.
  *
- * The access check lives in the query rather than in the page: a repository id
- * is a guessable URL, so filtering the list without also filtering the detail
- * lookup would leave every repo readable by anyone who typed the right number.
+ * The access check is a subquery in the WHERE clause rather than a separate
+ * lookup, so there is no window between checking and writing, and no code path
+ * that can update without having checked.
  */
-export async function getRepository(id: number, installationIds: number[]) {
-  if (installationIds.length === 0) return null
+export async function setManualBand(params: {
+  todoId: string
+  band: Band | null
+  by: string
+  installationIds: number[]
+}): Promise<{ repositoryId: number } | null> {
+  if (params.installationIds.length === 0) return null
+
+  const permitted = db
+    .select({ id: repositories.id })
+    .from(repositories)
+    .where(inArray(repositories.installationId, params.installationIds))
 
   const [row] = await db
-    .select()
-    .from(repositories)
-    .where(
-      and(eq(repositories.id, id), inArray(repositories.installationId, installationIds)),
-    )
-    .limit(1)
+    .update(todos)
+    .set({
+      manualBand: params.band,
+      // Cleared together with the band: "set by nobody, never" is the honest
+      // record once a row is back to automatic.
+      manualBandBy: params.band ? params.by : null,
+      manualBandAt: params.band ? new Date() : null,
+    })
+    .where(and(eq(todos.id, params.todoId), inArray(todos.repositoryId, permitted)))
+    .returning({ repositoryId: todos.repositoryId })
+
   return row ?? null
+}
+
+/** Comments for the TODOs currently on screen, oldest first. */
+export async function commentsFor(todoIds: string[]): Promise<TodoCommentRow[]> {
+  if (todoIds.length === 0) return []
+
+  return db
+    .select({
+      id: todoComments.id,
+      todoId: todoComments.todoId,
+      body: todoComments.body,
+      authorLogin: todoComments.authorLogin,
+      createdAt: todoComments.createdAt,
+    })
+    .from(todoComments)
+    .where(inArray(todoComments.todoId, todoIds))
+    .orderBy(todoComments.createdAt)
+}
+
+/**
+ * Adds a comment, returning null when the caller may not see the TODO.
+ *
+ * Written as INSERT ... SELECT ... WHERE EXISTS so the permission test and the
+ * write are one statement: a separate check followed by an insert would leave a
+ * window, and a code path that could insert without having checked.
+ */
+export async function addComment(params: {
+  todoId: string
+  body: string
+  authorLogin: string
+  installationIds: number[]
+}): Promise<{ repositoryId: number } | null> {
+  const body = params.body.trim().slice(0, MAX_COMMENT_LENGTH)
+  if (!body || params.installationIds.length === 0) return null
+
+  const permitted = sql.join(
+    params.installationIds.map((id) => sql`${id}`),
+    sql`, `,
+  )
+
+  const rows = await db.execute<{ repository_id: number }>(sql`
+    insert into ${todoComments} (todo_id, body, author_login)
+    select ${params.todoId}::uuid, ${body}, ${params.authorLogin}
+    where exists (
+      select 1
+      from ${todos} t
+      join ${repositories} r on r.id = t.repository_id
+      where t.id = ${params.todoId}::uuid
+        and r.installation_id in (${permitted})
+    )
+    returning (
+      select t.repository_id from ${todos} t where t.id = ${params.todoId}::uuid
+    ) as repository_id
+  `)
+
+  const row = rows[0]
+  return row ? { repositoryId: Number(row.repository_id) } : null
 }
 
 export interface PendingTodo {

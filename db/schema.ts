@@ -80,6 +80,18 @@ export const todos = pgTable(
 
     /** Null while open. Set when a scan of the default branch no longer finds it. */
     resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+
+    /**
+     * A band chosen by a person, overriding the computed one.
+     *
+     * Stored separately rather than by adjusting the score: the score is
+     * recomputed on every query from age and author activity, so a written-back
+     * value would be overwritten within a day. Keeping the human judgement in
+     * its own column also makes it visible as a judgement.
+     */
+    manualBand: text("manual_band"),
+    manualBandBy: text("manual_band_by"),
+    manualBandAt: timestamp("manual_band_at", { withTimezone: true }),
   },
   (table) => [
     // The upsert target: one row per distinct comment per repo.
@@ -91,5 +103,27 @@ export const todos = pgTable(
   ],
 )
 
+/**
+ * Notes people leave on a TODO.
+ *
+ * Cascades with the row: a comment about a TODO that no longer exists has no
+ * subject. Resolved TODOs keep their rows, so resolving does not lose history —
+ * only a repository being removed does.
+ */
+export const todoComments = pgTable(
+  "todo_comments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    todoId: uuid("todo_id")
+      .notNull()
+      .references(() => todos.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    authorLogin: text("author_login").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("todo_comments_todo").on(table.todoId, table.createdAt)],
+)
+
 export type Todo = typeof todos.$inferSelect
 export type NewTodo = typeof todos.$inferInsert
+export type TodoComment = typeof todoComments.$inferSelect

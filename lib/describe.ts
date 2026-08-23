@@ -8,6 +8,18 @@ export const WEIGHTS = {
 
 export type Band = "critical" | "high" | "moderate" | "low"
 
+/** Worst first, which is also the order columns appear in. */
+export const BANDS: Band[] = ["critical", "high", "moderate", "low"]
+
+/**
+ * Parses a band from untrusted input — a form value or a Server Action
+ * argument. Anything unrecognised means "back to automatic", so a bad value
+ * clears an override rather than being rejected or, worse, trusted.
+ */
+export function parseBand(raw: unknown): Band | null {
+  return typeof raw === "string" && (BANDS as string[]).includes(raw) ? (raw as Band) : null
+}
+
 /**
  * Bands exist because a bare score reads as a grade — "22/100" looks like a
  * failing mark when it actually means "nothing here is urgent yet". A label

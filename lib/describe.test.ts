@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest"
 import {
+  BANDS,
   bandFor,
+  parseBand,
   describeAge,
   describeAuthor,
   describeChurn,
@@ -27,6 +29,36 @@ describe("bandFor", () => {
     // The whole point: 35 must not read as a failing grade.
     expect(bandFor(35)).toBe("moderate")
     expect(bandFor(22)).toBe("low")
+  })
+})
+
+describe("parseBand", () => {
+  it("accepts a known band", () => {
+    expect(parseBand("critical")).toBe("critical")
+  })
+
+  it("treats anything unrecognised as back-to-automatic", () => {
+    // A Server Action argument is untrusted input, so a bad value must clear
+    // the override rather than be trusted or throw.
+    expect(parseBand("auto")).toBeNull()
+    expect(parseBand("")).toBeNull()
+    expect(parseBand(undefined)).toBeNull()
+    expect(parseBand(42)).toBeNull()
+  })
+})
+
+describe("BANDS", () => {
+  it("is ordered worst first, matching the board's columns", () => {
+    expect(BANDS).toEqual(["critical", "high", "moderate", "low"])
+  })
+
+  it("labels every score, and only ever gets less severe", () => {
+    let previous = 0
+    for (let score = 0; score <= 100; score++) {
+      const rank = BANDS.length - 1 - BANDS.indexOf(bandFor(score))
+      expect(rank).toBeGreaterThanOrEqual(previous)
+      previous = rank
+    }
   })
 })
 

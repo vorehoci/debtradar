@@ -1,27 +1,33 @@
-const MINUTE = 60_000
-const HOUR = 60 * MINUTE
-const DAY = 24 * HOUR
-
-/** Coarse relative age — "3 days", "2 months". Precision past a day is noise here. */
-export function age(from: Date | null): string {
-  if (!from) return "unknown"
-
-  const elapsed = Date.now() - from.getTime()
-  if (elapsed < HOUR) return `${Math.max(1, Math.round(elapsed / MINUTE))}m`
-  if (elapsed < DAY) return `${Math.round(elapsed / HOUR)}h`
-
-  const days = Math.round(elapsed / DAY)
-  if (days < 31) return `${days}d`
-  if (days < 365) return `${Math.round(days / 30)}mo`
-
-  const years = days / 365
-  return `${years < 2 ? years.toFixed(1) : Math.round(years)}y`
-}
-
 export function blobUrl(
   repo: { owner: string; name: string; defaultBranch: string },
   path: string,
   line: number,
 ): string {
   return `https://github.com/${repo.owner}/${repo.name}/blob/${repo.defaultBranch}/${path}#L${line}`
+}
+
+/**
+ * Locale and time zone are pinned rather than taken from the host.
+ *
+ * `toLocaleDateString()` formats using whatever the runtime is set to, so the
+ * server renders one string and the browser another, and React reports a
+ * hydration mismatch. Fixing both inputs makes the two renders identical.
+ *
+ * The cost is that timestamps read in UTC rather than the viewer's zone, which
+ * is why the time formatter says so.
+ */
+const DATE = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", dateStyle: "medium" })
+
+const DATE_TIME = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "UTC",
+  dateStyle: "medium",
+  timeStyle: "short",
+})
+
+export function formatDate(value: Date | string): string {
+  return DATE.format(new Date(value))
+}
+
+export function formatDateTime(value: Date | string): string {
+  return `${DATE_TIME.format(new Date(value))} UTC`
 }

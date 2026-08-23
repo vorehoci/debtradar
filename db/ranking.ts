@@ -1,6 +1,6 @@
 import { and, desc, eq, isNull, or, type SQL, sql } from "drizzle-orm"
-import { type Band, WEIGHTS } from "@/lib/describe"
-import { bandRange, type Sort } from "@/lib/query"
+import { type Band, BAND_THRESHOLDS, WEIGHTS } from "@/lib/describe"
+
 import { db } from "./index"
 import { todos } from "./schema"
 
@@ -98,6 +98,34 @@ export const scoreExpression = sql<number>`round((
   ${WEIGHTS.severity} * ${severity}
 )::numeric * 100)::int`
 
+const computedBand = sql<Band>`
+  case
+    when ${scoreExpression} >= ${BAND_THRESHOLDS.critical} then 'critical'
+    when ${scoreExpression} >= ${BAND_THRESHOLDS.high} then 'high'
+    when ${scoreExpression} >= ${BAND_THRESHOLDS.moderate} then 'moderate'
+    else 'low'
+  end`
+
+/**
+ * The band a TODO actually sits in: a person's choice if they made one, the
+ * computed band otherwise.
+ *
+ * Filtering and counting both go through this rather than through score ranges,
+ * so an item moved to critical by hand appears in the critical column and is
+ * counted there — which is the entire point of letting someone move it.
+ */
+export const effectiveBand = sql<Band>`coalesce(${todos.manualBand}, ${computedBand})`
+
+function bandFilter(bands: Band[]): SQL | undefined {
+  if (bands.length === 0) return undefined
+  return or(...bands.map((band) => sql`${effectiveBand} = ${band}`))
+}
+
+export interface TodoQuery {
+  bands?: Band[]
+  limit?: number
+}
+
 /**
  * Open TODOs for a repository, worst first.
  *
@@ -106,36 +134,8 @@ export const scoreExpression = sql<number>`round((
  * tomorrow. The components come back alongside it so the UI can show why a row
  * ranks where it does — an unexplained ranking is one nobody trusts.
  */
-const ORDER_BY = {
-  risk: () => desc(scoreExpression),
-  // Oldest genuinely first: authoredAt is null until enrichment runs, and
-  // `nulls last` keeps unenriched rows from squatting at the top.
-  age: () => sql`coalesce(${todos.authoredAt}, ${todos.firstSeenAt}) asc nulls last`,
-  churn: () => sql`${todos.fileChurn} desc nulls last`,
-  recent: () => desc(todos.firstSeenAt),
-  file: () => sql`${todos.filePath} asc, ${todos.line} asc`,
-} satisfies Record<Sort, () => SQL>
-
-function bandFilter(bands: Band[]): SQL | undefined {
-  if (bands.length === 0) return undefined
-
-  const ranges = bands.map((band) => {
-    const { min, max } = bandRange(band)
-    return max === null
-      ? sql`${scoreExpression} >= ${min}`
-      : sql`${scoreExpression} between ${min} and ${max}`
-  })
-  return or(...ranges)
-}
-
-export interface TodoQuery {
-  bands?: Band[]
-  sort?: Sort
-  limit?: number
-}
-
 export async function rankedTodos(repositoryId: number, query: TodoQuery = {}) {
-  const { bands = [], sort = "risk", limit = 25 } = query
+  const { bands = [], limit = 25 } = query
 
   return db
     .select({
@@ -147,6 +147,10 @@ export async function rankedTodos(repositoryId: number, query: TodoQuery = {}) {
       category: todos.category,
       authorLogin: todos.authorLogin,
       authorLastActiveAt: todos.authorLastActiveAt,
+      manualBand: todos.manualBand,
+      manualBandBy: todos.manualBandBy,
+      manualBandAt: todos.manualBandAt,
+      band: effectiveBand,
       authoredAt: todos.authoredAt,
       fileChurn: todos.fileChurn,
       score: scoreExpression,
@@ -163,7 +167,7 @@ export async function rankedTodos(repositoryId: number, query: TodoQuery = {}) {
         bandFilter(bands),
       ),
     )
-    .orderBy(ORDER_BY[sort]())
+    .orderBy(desc(scoreExpression))
     .limit(limit)
 }
 
@@ -177,12 +181,8 @@ export type RankedTodo = Awaited<ReturnType<typeof rankedTodos>>[number]
  * the codebase.
  */
 export async function todoCounts(repositoryId: number) {
-  const band = (b: Band) => {
-    const { min, max } = bandRange(b)
-    return max === null
-      ? sql<number>`count(*) filter (where ${scoreExpression} >= ${min})::int`
-      : sql<number>`count(*) filter (where ${scoreExpression} between ${min} and ${max})::int`
-  }
+  const band = (b: Band) =>
+    sql<number>`count(*) filter (where ${effectiveBand} = ${b})::int`
 
   const [row] = await db
     .select({

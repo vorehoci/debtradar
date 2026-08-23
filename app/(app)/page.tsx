@@ -1,8 +1,7 @@
 import Link from "next/link"
 import { auth } from "@/auth"
-import { listRepositories } from "@/db/repository"
-import { accessibleInstallationIds, GitHubAuthError } from "@/lib/access"
 import { describeRepo } from "@/lib/describe"
+import { currentRepositories } from "@/lib/session-repos"
 import { SignIn, SignOut } from "./auth-buttons"
 
 export const dynamic = "force-dynamic"
@@ -25,37 +24,28 @@ function SignedOut({ notice }: { notice?: string }) {
 }
 
 export default async function Home() {
-  const session = await auth()
-  if (!session?.accessToken) return <SignedOut />
+  const result = await currentRepositories()
 
-  let installationIds: number[]
-  try {
-    // Cached in-process, so this is a network call only once every few minutes.
-    installationIds = await accessibleInstallationIds(session.accessToken)
-  } catch (error) {
-    // GitHub App user tokens expire after eight hours, so an expired session is
-    // an ordinary state to render, not a crash.
-    if (error instanceof GitHubAuthError) {
-      return <SignedOut notice="Your GitHub session expired. Sign in again to continue." />
-    }
-    throw error
+  if (result.state === "signed-out") return <SignedOut />
+  if (result.state === "expired") {
+    return <SignedOut notice="Your GitHub session expired. Sign in again to continue." />
   }
 
-  const repos = await listRepositories(installationIds)
+  const session = await auth()
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-16">
+    <main className="mx-auto w-full max-w-3xl px-6 py-10">
       <header className="mb-10 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">debtradar</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Repositories</h1>
           <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
             TODOs ranked by how much they are likely to hurt.
           </p>
         </div>
-        <SignOut label={session.user?.name ?? "signed in"} />
+        <SignOut label={session?.user?.name ?? "signed in"} />
       </header>
 
-      {repos.length === 0 ? (
+      {result.repos.length === 0 ? (
         <div className="rounded-lg border border-dashed border-neutral-300 p-10 text-center dark:border-neutral-700">
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
             No repositories yet. Install the app and push to a default branch.
@@ -63,11 +53,11 @@ export default async function Home() {
         </div>
       ) : (
         <ul className="space-y-2">
-          {repos.map((repo) => (
+          {result.repos.map((repo) => (
             <li key={repo.id}>
               <Link
                 href={`/repos/${repo.id}`}
-                className="flex items-center justify-between rounded-lg border border-neutral-200 px-5 py-4 transition-colors hover:border-neutral-400 dark:border-neutral-800 dark:hover:border-neutral-600"
+                className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 px-5 py-4 transition-colors hover:border-neutral-400 dark:border-neutral-800 dark:hover:border-neutral-600"
               >
                 <div>
                   <div>
@@ -81,7 +71,7 @@ export default async function Home() {
                   </p>
                 </div>
                 <span
-                  className="shrink-0 text-xs text-neutral-400 tabular-nums dark:text-neutral-500"
+                  className="shrink-0 text-xs tabular-nums text-neutral-400 dark:text-neutral-500"
                   title="Resolved since debtradar started watching"
                 >
                   {repo.resolved} resolved

@@ -1,25 +1,26 @@
 import { describe, expect, it } from "vitest"
-import { age, blobUrl } from "./format"
+import { blobUrl, formatDate, formatDateTime } from "./format"
 
-describe("age", () => {
-  const ago = (ms: number) => new Date(Date.now() - ms)
-  const DAY = 86_400_000
+describe("date formatting", () => {
+  // Pinned output is the whole point: if these depended on the host's locale or
+  // time zone, the server and the browser would render different strings and
+  // React would refuse to hydrate.
+  const moment = new Date("2026-08-23T14:32:07Z")
 
-  it("scales the unit to the magnitude", () => {
-    expect(age(ago(5 * 60_000))).toBe("5m")
-    expect(age(ago(5 * 3_600_000))).toBe("5h")
-    expect(age(ago(5 * DAY))).toBe("5d")
-    expect(age(ago(90 * DAY))).toBe("3mo")
-    expect(age(ago(400 * DAY))).toBe("1.1y")
-    expect(age(ago(1200 * DAY))).toBe("3y")
+  it("formats a date independently of the host locale", () => {
+    expect(formatDate(moment)).toBe("23 Aug 2026")
   })
 
-  it("never reports zero for something that just happened", () => {
-    expect(age(ago(1000))).toBe("1m")
+  it("formats a timestamp in UTC and says so", () => {
+    expect(formatDateTime(moment)).toBe("23 Aug 2026, 14:32 UTC")
   })
 
-  it("handles a missing date", () => {
-    expect(age(null)).toBe("unknown")
+  it("accepts a serialised date, as arrives over the RSC boundary", () => {
+    expect(formatDate("2026-08-23T14:32:07Z")).toBe("23 Aug 2026")
+  })
+
+  it("does not shift the day for a late-evening UTC time", () => {
+    expect(formatDate(new Date("2026-08-23T23:59:00Z"))).toBe("23 Aug 2026")
   })
 })
 
