@@ -30,6 +30,7 @@ export default async function Home() {
 
   let installationIds: number[]
   try {
+    // Cached in-process, so this is a network call only once every few minutes.
     installationIds = await accessibleInstallationIds(session.accessToken)
   } catch (error) {
     // GitHub App user tokens expire after eight hours, so an expired session is

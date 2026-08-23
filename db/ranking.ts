@@ -1,5 +1,6 @@
-import { and, desc, eq, isNull, sql } from "drizzle-orm"
-import { WEIGHTS } from "@/lib/describe"
+import { and, desc, eq, isNull, or, type SQL, sql } from "drizzle-orm"
+import { type Band, WEIGHTS } from "@/lib/describe"
+import { bandRange, type Sort } from "@/lib/query"
 import { db } from "./index"
 import { todos } from "./schema"
 
@@ -105,7 +106,37 @@ export const scoreExpression = sql<number>`round((
  * tomorrow. The components come back alongside it so the UI can show why a row
  * ranks where it does — an unexplained ranking is one nobody trusts.
  */
-export async function rankedTodos(repositoryId: number, limit = 50) {
+const ORDER_BY = {
+  risk: () => desc(scoreExpression),
+  // Oldest genuinely first: authoredAt is null until enrichment runs, and
+  // `nulls last` keeps unenriched rows from squatting at the top.
+  age: () => sql`coalesce(${todos.authoredAt}, ${todos.firstSeenAt}) asc nulls last`,
+  churn: () => sql`${todos.fileChurn} desc nulls last`,
+  recent: () => desc(todos.firstSeenAt),
+  file: () => sql`${todos.filePath} asc, ${todos.line} asc`,
+} satisfies Record<Sort, () => SQL>
+
+function bandFilter(bands: Band[]): SQL | undefined {
+  if (bands.length === 0) return undefined
+
+  const ranges = bands.map((band) => {
+    const { min, max } = bandRange(band)
+    return max === null
+      ? sql`${scoreExpression} >= ${min}`
+      : sql`${scoreExpression} between ${min} and ${max}`
+  })
+  return or(...ranges)
+}
+
+export interface TodoQuery {
+  bands?: Band[]
+  sort?: Sort
+  limit?: number
+}
+
+export async function rankedTodos(repositoryId: number, query: TodoQuery = {}) {
+  const { bands = [], sort = "risk", limit = 25 } = query
+
   return db
     .select({
       id: todos.id,
@@ -125,9 +156,46 @@ export async function rankedTodos(repositoryId: number, limit = 50) {
       severityFactor: severity,
     })
     .from(todos)
-    .where(and(eq(todos.repositoryId, repositoryId), isNull(todos.resolvedAt)))
-    .orderBy(desc(scoreExpression))
+    .where(
+      and(
+        eq(todos.repositoryId, repositoryId),
+        isNull(todos.resolvedAt),
+        bandFilter(bands),
+      ),
+    )
+    .orderBy(ORDER_BY[sort]())
     .limit(limit)
 }
 
 export type RankedTodo = Awaited<ReturnType<typeof rankedTodos>>[number]
+
+/**
+ * Totals for the whole repository, not the page.
+ *
+ * The header previously counted the rows it had fetched, so a repository with
+ * 357 open TODOs reported "50 open" — the page limit presented as a fact about
+ * the codebase.
+ */
+export async function todoCounts(repositoryId: number) {
+  const band = (b: Band) => {
+    const { min, max } = bandRange(b)
+    return max === null
+      ? sql<number>`count(*) filter (where ${scoreExpression} >= ${min})::int`
+      : sql<number>`count(*) filter (where ${scoreExpression} between ${min} and ${max})::int`
+  }
+
+  const [row] = await db
+    .select({
+      open: sql<number>`count(*)::int`,
+      critical: band("critical"),
+      high: band("high"),
+      moderate: band("moderate"),
+      low: band("low"),
+    })
+    .from(todos)
+    .where(and(eq(todos.repositoryId, repositoryId), isNull(todos.resolvedAt)))
+
+  return row ?? { open: 0, critical: 0, high: 0, moderate: 0, low: 0 }
+}
+
+export type TodoCounts = Awaited<ReturnType<typeof todoCounts>>
