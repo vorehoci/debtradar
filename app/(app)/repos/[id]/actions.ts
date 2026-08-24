@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { auth } from "@/auth"
 import {
   addComment,
+  dismissTodos,
   getRepository,
   saveFixAnalysis,
   setManualBand,
@@ -203,6 +204,34 @@ export async function updateValidity(todoId: string, answer: "yes" | "no" | "uns
 
   if (!updated) throw new Error("Not found")
   revalidate(updated.repositoryId)
+}
+
+/**
+ * Dismisses several TODOs in one go.
+ *
+ * Doing this one card at a time is the reason nobody would: a deep scan of
+ * cal.com surfaces 165 rows of which roughly a third are wrong, and correcting
+ * those individually is a quarter of an hour of clicking. The labelled feedback
+ * only accumulates if correcting the tool is cheap.
+ */
+export async function dismissMany(todoIds: string[]): Promise<{ dismissed: number }> {
+  const session = await auth()
+  if (!session?.accessToken) throw new Error("Not signed in")
+
+  // Anything not shaped like an id is dropped rather than sent to Postgres as a
+  // failed cast, which would surface as a 500 instead of a refusal.
+  const ids = todoIds.filter((id) => UUID.test(id))
+  if (ids.length === 0) return { dismissed: 0 }
+
+  const installationIds = await accessibleInstallationIds(session.accessToken)
+  const result = await dismissTodos({
+    todoIds: ids,
+    by: session.user?.name ?? session.user?.email ?? "unknown",
+    installationIds,
+  })
+
+  if (result.repositoryId !== null) revalidate(result.repositoryId)
+  return { dismissed: result.dismissed }
 }
 
 export async function postComment(todoId: string, body: string) {

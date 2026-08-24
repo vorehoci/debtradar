@@ -12,7 +12,7 @@ import {
 import { blobUrl, formatDate, formatDateTime } from "@/lib/format"
 import type { RankedTodo } from "@/db/ranking"
 import { MAX_COMMENT_LENGTH, type TodoCommentRow } from "@/lib/todo-comments"
-import { analyseTodo, postComment, updateSeverity, updateValidity } from "../actions"
+import { analyseTodo, dismissMany, postComment, updateSeverity, updateValidity } from "../actions"
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/adapter/element-adapter"
 import { AnalysedMark } from "../analysed-mark"
 import { DismissedChip } from "../dismissed-chip"
@@ -33,29 +33,68 @@ function Card({
   commentCount,
   selected,
   onSelect,
+  checked,
+  onToggleChecked,
+  anyChecked,
 }: {
   todo: RankedTodo
   commentCount: number
   selected: boolean
   onSelect: () => void
+  checked: boolean
+  onToggleChecked: () => void
+  anyChecked: boolean
 }) {
   const filename = todo.filePath.split("/").pop() ?? todo.filePath
   const { ref, dragging } = useDraggableCard(todo.id, todo.band)
 
   return (
-    <div ref={ref} className={dragging ? "opacity-40" : ""}>
+    <div ref={ref} className={`group relative ${dragging ? "opacity-40" : ""}`}>
+      {/* Its own hit target, outside the card button: selecting and opening are
+          different intents, and a modifier-click convention would be invisible.
+          Hidden until hover unless something is already selected, so the board
+          stays clean while you are only reading it. */}
+      <label
+        className={`absolute top-2 right-2 z-10 flex h-5 w-5 cursor-pointer items-center justify-center rounded border bg-white transition-opacity dark:bg-neutral-900 ${
+          checked
+            ? "border-neutral-900 opacity-100 dark:border-neutral-100"
+            : `border-neutral-300 dark:border-neutral-600 ${
+                anyChecked ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+              }`
+        }`}
+      >
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={onToggleChecked}
+          className="sr-only"
+          aria-label={`Select ${filename}:${todo.line}`}
+        />
+        {checked ? (
+          <svg viewBox="0 0 16 16" className="h-3 w-3" fill="currentColor" aria-hidden="true">
+            <path d="M6.2 11.6 2.8 8.2l1.2-1.2 2.2 2.2 5.8-5.8 1.2 1.2z" />
+          </svg>
+        ) : null}
+      </label>
+
       <button
         type="button"
-        onClick={onSelect}
-        aria-pressed={selected}
+        // Once anything is selected the board is in selection mode, so the whole
+        // card becomes the target — hunting for a 20px checkbox to pick the next
+        // twenty rows is the thing that makes bulk triage tedious. Clearing the
+        // selection returns clicks to opening the panel.
+        onClick={anyChecked ? onToggleChecked : onSelect}
+        aria-pressed={anyChecked ? checked : selected}
         // `active:` covers the press before a drag actually starts, so the hand
         // closes on mousedown rather than only once the card detaches.
         className={`w-full rounded-lg border p-3 text-left transition-colors ${
           dragging ? "cursor-grabbing" : "cursor-pointer active:cursor-grabbing"
         } ${
-          selected
-            ? "border-neutral-900 dark:border-neutral-100"
-            : "border-neutral-200 hover:border-neutral-400 dark:border-neutral-800 dark:hover:border-neutral-600"
+          checked
+            ? "border-neutral-900 ring-1 ring-neutral-900 dark:border-neutral-100 dark:ring-neutral-100"
+            : selected
+              ? "border-neutral-900 dark:border-neutral-100"
+              : "border-neutral-200 hover:border-neutral-400 dark:border-neutral-800 dark:hover:border-neutral-600"
         } ${
           // Only visible when "show dismissed" is on, and then it must be obvious
           // which rows are only there because you asked to see them.
@@ -66,6 +105,9 @@ function Card({
           <span className="font-mono text-[11px] font-semibold text-neutral-600 dark:text-neutral-300">
             {todo.marker ?? todo.category}
           </span>
+          {/* No space reserved for the checkbox: it only appears on hover or
+              while selecting, and covering the score then is fine — nobody is
+              reading it at that moment. */}
           <span className="flex items-center gap-1.5">
             {todo.isValid === false ? <DismissedChip by={todo.validBy} /> : null}
             {todo.fixAnalyzedSha ? (
@@ -428,36 +470,77 @@ export function Board({
   comments: TodoCommentRow[]
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [checked, setChecked] = useState<Set<string>>(new Set())
 
   /**
-   * Moves a card the instant it is dropped, before the server confirms.
+   * Applies a change the instant it happens, before the server confirms.
    *
-   * Without this the card snaps back to its old column and jumps again when the
-   * page revalidates, which reads as the drag having failed. React discards
-   * this state automatically once the action settles and fresh props arrive.
+   * Without this a dropped card snaps back to its old column and jumps again on
+   * revalidation, which reads as the action having failed. React discards this
+   * state automatically once the action settles and fresh props arrive.
    */
-  const [view, moveCard] = useOptimistic(
+  const [view, apply] = useOptimistic(
     columns,
-    (current, move: { todoId: string; toBand: Band }) =>
-      current.map((column) => {
-        const moved = columns
-          .flatMap((c) => c.todos)
-          .find((todo) => todo.id === move.todoId)
-        if (!moved) return column
+    (
+      current,
+      action:
+        | { type: "move"; todoId: string; toBand: Band }
+        | { type: "dismiss"; ids: Set<string> },
+    ) => {
+      if (action.type === "dismiss") {
+        return current.map((column) => {
+          const kept = column.todos.filter((todo) => !action.ids.has(todo.id))
+          return {
+            ...column,
+            total: Math.max(0, column.total - (column.todos.length - kept.length)),
+            todos: kept,
+          }
+        })
+      }
 
-        if (column.band === move.toBand) {
-          return { ...column, total: column.total + 1, todos: [{ ...moved, band: move.toBand }, ...column.todos] }
+      const moved = current.flatMap((c) => c.todos).find((todo) => todo.id === action.todoId)
+      if (!moved) return current
+
+      return current.map((column) => {
+        if (column.band === action.toBand) {
+          return {
+            ...column,
+            total: column.total + 1,
+            todos: [{ ...moved, band: action.toBand }, ...column.todos],
+          }
         }
-        if (column.todos.some((todo) => todo.id === move.todoId)) {
+        if (column.todos.some((todo) => todo.id === action.todoId)) {
           return {
             ...column,
             total: Math.max(0, column.total - 1),
-            todos: column.todos.filter((todo) => todo.id !== move.todoId),
+            todos: column.todos.filter((todo) => todo.id !== action.todoId),
           }
         }
         return column
-      }),
+      })
+    },
   )
+
+  function toggleChecked(id: string) {
+    setChecked((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function dismissChecked() {
+    const ids = new Set(checked)
+    setChecked(new Set())
+    // The panel may be showing one of the rows about to disappear.
+    if (selectedId && ids.has(selectedId)) setSelectedId(null)
+
+    startTransition(async () => {
+      apply({ type: "dismiss", ids })
+      await dismissMany([...ids])
+    })
+  }
 
   const selected = view.flatMap((c) => c.todos).find((t) => t.id === selectedId) ?? null
 
@@ -482,16 +565,43 @@ export function Board({
           if (source.data.fromBand === toBand) return
 
           startTransition(async () => {
-            moveCard({ todoId, toBand })
+            apply({ type: "move", todoId, toBand })
             await updateSeverity(todoId, toBand)
           })
         },
       }),
-    [moveCard],
+    [apply],
   )
 
   return (
     <>
+      {/* Fixed to the bottom rather than inserted above the columns: a bar that
+          appears in flow would shift the whole board the moment you tick a box,
+          moving the next card out from under the cursor. */}
+      {checked.size > 0 ? (
+        <div className="fixed inset-x-0 bottom-0 z-30 flex justify-center px-4 pb-4">
+          <div className="flex items-center gap-4 rounded-full border border-neutral-300 bg-white px-4 py-2 shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
+            <span className="text-xs tabular-nums text-neutral-600 dark:text-neutral-300">
+              {checked.size} selected
+            </span>
+            <button
+              type="button"
+              onClick={dismissChecked}
+              className="cursor-pointer rounded bg-neutral-900 px-3 py-1 text-xs font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
+            >
+              Not real TODOs
+            </button>
+            <button
+              type="button"
+              onClick={() => setChecked(new Set())}
+              className="cursor-pointer text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <div className="flex gap-4 overflow-x-auto pb-4">
         {view.map(({ band, total, todos }) => (
           <Column key={band} band={band} total={total} count={counts[band]}>
@@ -507,6 +617,9 @@ export function Board({
                   commentCount={byTodo.get(todo.id)?.length ?? 0}
                   selected={todo.id === selectedId}
                   onSelect={() => setSelectedId(todo.id)}
+                  checked={checked.has(todo.id)}
+                  onToggleChecked={() => toggleChecked(todo.id)}
+                  anyChecked={checked.size > 0}
                 />
               ))
             )}

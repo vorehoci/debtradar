@@ -196,6 +196,41 @@ export async function commentsForRepository(repositoryId: number): Promise<TodoC
     .orderBy(todoComments.createdAt)
 }
 
+/** One request cannot dismiss an unbounded number of rows. */
+export const MAX_BULK_DISMISS = 200
+
+/**
+ * Marks several TODOs "not a real TODO" at once.
+ *
+ * The permission test is the same subquery used by the single-row writes, so a
+ * list containing ids from a repository the caller cannot see silently drops
+ * those rows rather than failing the whole call — a partial success is the
+ * honest outcome when the request was partly illegitimate.
+ */
+export async function dismissTodos(params: {
+  todoIds: string[]
+  by: string
+  installationIds: number[]
+}): Promise<{ dismissed: number; repositoryId: number | null }> {
+  const ids = params.todoIds.slice(0, MAX_BULK_DISMISS)
+  if (ids.length === 0 || params.installationIds.length === 0) {
+    return { dismissed: 0, repositoryId: null }
+  }
+
+  const permitted = db
+    .select({ id: repositories.id })
+    .from(repositories)
+    .where(inArray(repositories.installationId, params.installationIds))
+
+  const rows = await db
+    .update(todos)
+    .set({ isValid: false, validBy: params.by, validAt: new Date() })
+    .where(and(inArray(todos.id, ids), inArray(todos.repositoryId, permitted)))
+    .returning({ repositoryId: todos.repositoryId })
+
+  return { dismissed: rows.length, repositoryId: rows[0]?.repositoryId ?? null }
+}
+
 /** Comments for the TODOs currently on screen, oldest first. */
 export async function commentsFor(todoIds: string[]): Promise<TodoCommentRow[]> {
   if (todoIds.length === 0) return []
