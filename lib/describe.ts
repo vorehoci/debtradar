@@ -36,9 +36,17 @@ export function bandFor(score: number): Band {
 
 const DAY = 86_400_000
 
-/** Prose duration — "3 days", "8 months", "10 years". */
-export function duration(from: Date): string {
-  const days = Math.max(0, Math.round((Date.now() - from.getTime()) / DAY))
+/**
+ * Prose duration — "3 days", "8 months", "10 years".
+ *
+ * Accepts a string as well as a Date: values arriving from a raw SQL expression
+ * or across the RSC boundary are serialised timestamps, not Date instances, and
+ * calling a Date method on one throws at render time with nothing to warn you
+ * at compile time.
+ */
+export function duration(from: Date | string): string {
+  const at = from instanceof Date ? from : new Date(from)
+  const days = Math.max(0, Math.round((Date.now() - at.getTime()) / DAY))
   if (days < 1) return "today"
   if (days === 1) return "1 day"
   if (days < 45) return `${days} days`
@@ -50,7 +58,7 @@ export function duration(from: Date): string {
   return years === 1 ? "1 year" : `${years} years`
 }
 
-export function describeAge(authoredAt: Date | null): string {
+export function describeAge(authoredAt: Date | string | null): string {
   return authoredAt ? `${duration(authoredAt)} old` : "age unknown"
 }
 

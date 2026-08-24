@@ -50,7 +50,13 @@ export function commentTextIn(text: string, syntax: CommentSyntax): string | und
   if (!trimmed) return undefined
 
   // Continuation of a block comment, e.g. the middle lines of a JSDoc block.
-  if (syntax.block && trimmed.startsWith("*") && !trimmed.startsWith("*/")) {
+  //
+  // Restricted to `/* */` syntax on purpose. Applying it to every language with
+  // a block form meant markdown bullets and bold text — `*Warning:*`, `* item`
+  // — were stripped of their asterisk and reported as comments, which then fed
+  // the classifier prose that was never a comment at all.
+  const isSlashStar = syntax.block?.[0] === "/*"
+  if (isSlashStar && trimmed.startsWith("*") && !trimmed.startsWith("*/")) {
     return trimmed.slice(1).trim() || undefined
   }
 

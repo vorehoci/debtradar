@@ -62,6 +62,23 @@ describe("BANDS", () => {
   })
 })
 
+describe("duration accepts serialised timestamps", () => {
+  // Raw SQL fragments skip Drizzle's decoding and RSC serialises Dates to
+  // strings, so a Date-only signature throws at render with no compile warning.
+  it("handles a Postgres timestamp string", () => {
+    const twelveDaysAgo = ago(12).toISOString().replace("T", " ").slice(0, 19) + "+00"
+    expect(duration(twelveDaysAgo)).toBe("12 days")
+  })
+
+  it("handles an ISO string", () => {
+    expect(duration(ago(90).toISOString())).toBe("3 months")
+  })
+
+  it("still handles a real Date", () => {
+    expect(duration(ago(365))).toBe("1 year")
+  })
+})
+
 describe("duration", () => {
   it("scales the unit to the magnitude", () => {
     expect(duration(ago(0))).toBe("today")

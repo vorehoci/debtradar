@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, or, type SQL, sql } from "drizzle-orm"
+import { and, desc, eq, isNotNull, isNull, or, type SQL, sql } from "drizzle-orm"
 import { type Band, BAND_THRESHOLDS, WEIGHTS } from "@/lib/describe"
 
 import { db } from "./index"
@@ -121,9 +121,32 @@ function bandFilter(bands: Band[]): SQL | undefined {
   return or(...bands.map((band) => sql`${effectiveBand} = ${band}`))
 }
 
+/**
+ * How a TODO was found.
+ *
+ * `category` is set only by the classifier — the regex pass records a `marker`
+ * instead — so its presence is the record of provenance.
+ */
+export type Source = "claude" | "marker"
+
+function sourceFilter(source: Source | undefined): SQL | undefined {
+  if (source === "claude") return isNotNull(todos.category)
+  if (source === "marker") return isNull(todos.category)
+  return undefined
+}
+
 export interface TodoQuery {
   bands?: Band[]
+  source?: Source
   limit?: number
+  /**
+   * Include rows a person marked "not a real TODO".
+   *
+   * Dismissing has to remove something from the board or it achieves nothing,
+   * but the row is never deleted — a wrong answer must be reversible, and the
+   * label is the point of collecting it.
+   */
+  includeDismissed?: boolean
 }
 
 /**
@@ -134,8 +157,11 @@ export interface TodoQuery {
  * tomorrow. The components come back alongside it so the UI can show why a row
  * ranks where it does — an unexplained ranking is one nobody trusts.
  */
+/** Rows nobody has dismissed. `isValid` is null until somebody answers. */
+const notDismissed = or(isNull(todos.isValid), eq(todos.isValid, true))
+
 export async function rankedTodos(repositoryId: number, query: TodoQuery = {}) {
-  const { bands = [], limit = 25 } = query
+  const { bands = [], source, limit = 25, includeDismissed = false } = query
 
   return db
     .select({
@@ -150,6 +176,9 @@ export async function rankedTodos(repositoryId: number, query: TodoQuery = {}) {
       manualBand: todos.manualBand,
       manualBandBy: todos.manualBandBy,
       manualBandAt: todos.manualBandAt,
+      isValid: todos.isValid,
+      validBy: todos.validBy,
+      validAt: todos.validAt,
       band: effectiveBand,
       fixable: todos.fixable,
       fixScope: todos.fixScope,
@@ -173,6 +202,8 @@ export async function rankedTodos(repositoryId: number, query: TodoQuery = {}) {
         eq(todos.repositoryId, repositoryId),
         isNull(todos.resolvedAt),
         bandFilter(bands),
+        sourceFilter(source),
+        includeDismissed ? undefined : notDismissed,
       ),
     )
     .orderBy(desc(scoreExpression))
@@ -188,22 +219,79 @@ export type RankedTodo = Awaited<ReturnType<typeof rankedTodos>>[number]
  * 357 open TODOs reported "50 open" — the page limit presented as a fact about
  * the codebase.
  */
-export async function todoCounts(repositoryId: number) {
+export async function todoCounts(repositoryId: number, source?: Source) {
+  // Band counts exclude dismissed rows so the column headers agree with the
+  // cards under them; `dismissed` is counted separately so the board can offer
+  // to show them without the numbers double-counting.
   const band = (b: Band) =>
-    sql<number>`count(*) filter (where ${effectiveBand} = ${b})::int`
+    sql<number>`count(*) filter (
+      where ${effectiveBand} = ${b}
+        and (${todos.isValid} is null or ${todos.isValid} = true)
+    )::int`
 
   const [row] = await db
     .select({
-      open: sql<number>`count(*)::int`,
+      open: sql<number>`count(*) filter (
+        where ${todos.isValid} is null or ${todos.isValid} = true
+      )::int`,
       critical: band("critical"),
       high: band("high"),
       moderate: band("moderate"),
       low: band("low"),
+      dismissed: sql<number>`count(*) filter (where ${todos.isValid} = false)::int`,
+      /** Total found by the classifier, so the filter chip can show its size. */
+      byClaude: sql<number>`count(*) filter (
+        where ${todos.category} is not null
+          and (${todos.isValid} is null or ${todos.isValid} = true)
+      )::int`,
     })
     .from(todos)
-    .where(and(eq(todos.repositoryId, repositoryId), isNull(todos.resolvedAt)))
+    // The counts must obey the same source filter as the cards, or a column
+    // header claims 95 while showing three.
+    .where(
+      and(
+        eq(todos.repositoryId, repositoryId),
+        isNull(todos.resolvedAt),
+        sourceFilter(source),
+      ),
+    )
 
-  return row ?? { open: 0, critical: 0, high: 0, moderate: 0, low: 0 }
+  return row ?? { open: 0, critical: 0, high: 0, moderate: 0, low: 0, dismissed: 0, byClaude: 0 }
 }
 
 export type TodoCounts = Awaited<ReturnType<typeof todoCounts>>
+
+/** Overview figures that are not per-band counts. */
+export async function repositoryStats(repositoryId: number) {
+  const [row] = await db
+    .select({
+      resolved: sql<number>`count(*) filter (where ${todos.resolvedAt} is not null)::int`,
+      marked: sql<number>`count(*) filter (
+        where ${todos.resolvedAt} is null and ${todos.marker} is not null
+      )::int`,
+      classified: sql<number>`count(*) filter (
+        where ${todos.resolvedAt} is null and ${todos.marker} is null
+      )::int`,
+      manual: sql<number>`count(*) filter (
+        where ${todos.resolvedAt} is null and ${todos.manualBand} is not null
+      )::int`,
+      // Authored, not first-seen: the age of the comment, not of our record.
+      oldest: sql<string | null>`min(${todos.authoredAt}) filter (
+        where ${todos.resolvedAt} is null
+      )`,
+      authors: sql<number>`count(distinct ${todos.authorLogin}) filter (
+        where ${todos.resolvedAt} is null
+      )::int`,
+    })
+    .from(todos)
+    .where(eq(todos.repositoryId, repositoryId))
+
+  if (!row) {
+    return { resolved: 0, marked: 0, classified: 0, manual: 0, oldest: null, authors: 0 }
+  }
+
+  // A raw SQL fragment skips Drizzle's column decoding, so this arrives as a
+  // timestamp string however it is annotated. Converting here keeps the lie out
+  // of every caller.
+  return { ...row, oldest: row.oldest === null ? null : new Date(row.oldest) }
+}

@@ -1,15 +1,19 @@
 import Link from "next/link"
-import { auth } from "@/auth"
 import { describeRepo } from "@/lib/describe"
 import { currentRepositories } from "@/lib/session-repos"
-import { SignIn, SignOut } from "./auth-buttons"
+import { SignIn } from "./auth-buttons"
+import { Logo } from "./logo"
 
 export const dynamic = "force-dynamic"
 
 function SignedOut({ notice }: { notice?: string }) {
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-16">
-      <h1 className="text-2xl font-semibold tracking-tight">debtradar</h1>
+      {/* The signed-out page has no header, so the mark belongs here too —
+          otherwise the first screen a visitor sees is the only one without it. */}
+      <h1>
+        <Logo className="h-8 w-auto text-[#07845d] dark:text-[#6dffc6]" />
+      </h1>
       <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
         TODOs ranked by how much they are likely to hurt.
       </p>
@@ -31,18 +35,16 @@ export default async function Home() {
     return <SignedOut notice="Your GitHub session expired. Sign in again to continue." />
   }
 
-  const session = await auth()
 
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-10">
-      <header className="mb-10 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Repositories</h1>
-          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-            TODOs ranked by how much they are likely to hurt.
-          </p>
-        </div>
-        <SignOut label={session?.user?.name ?? "signed in"} />
+      {/* Sign-out moved to the app header, which is on every page rather than
+          only this one. */}
+      <header className="mb-10">
+        <h1 className="text-2xl font-semibold tracking-tight">Repositories</h1>
+        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+          TODOs ranked by how much they are likely to hurt.
+        </p>
       </header>
 
       {result.repos.length === 0 ? (

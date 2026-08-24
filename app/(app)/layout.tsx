@@ -1,9 +1,10 @@
 import { currentRepositories } from "@/lib/session-repos"
+import { Header } from "./header"
 import { Sidebar } from "./sidebar"
 
 /**
- * Signed-in shell. The sidebar lives here rather than in each page so it
- * survives navigation between the repository list and a board instead of
+ * Signed-in shell. The header and sidebar live here rather than in each page so
+ * they survive navigation between the repository list and a board instead of
  * remounting and flashing.
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -14,9 +15,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (session.state !== "ok") return <>{children}</>
 
   return (
-    <div className="flex min-h-screen flex-col sm:flex-row">
-      <Sidebar repos={session.repos.map(({ id, owner, name }) => ({ id, owner, name }))} />
-      <div className="min-w-0 flex-1">{children}</div>
+    <div className="flex min-h-screen flex-col">
+      <Header user={session.user} />
+
+      <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
+        <Sidebar repos={session.repos.map(({ id, owner, name }) => ({ id, owner, name }))} />
+        <div className="min-w-0 flex-1">{children}</div>
+      </div>
     </div>
   )
 }

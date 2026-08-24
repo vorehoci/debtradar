@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { startTransition, useEffect, useOptimistic, useState, useTransition } from "react"
 import {
   type Band,
   BANDS,
@@ -12,8 +12,12 @@ import {
 import { blobUrl, formatDate, formatDateTime } from "@/lib/format"
 import type { RankedTodo } from "@/db/ranking"
 import { MAX_COMMENT_LENGTH, type TodoCommentRow } from "@/lib/todo-comments"
-import { analyseTodo, postComment, updateSeverity } from "./actions"
-import { ManualMark } from "./manual-mark"
+import { analyseTodo, postComment, updateSeverity, updateValidity } from "../actions"
+import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/adapter/element-adapter"
+import { AnalysedMark } from "../analysed-mark"
+import { DismissedChip } from "../dismissed-chip"
+import { useDraggableCard, useDropColumn } from "./use-drag"
+import { ManualMark } from "../manual-mark"
 
 type Repo = { owner: string; name: string; defaultBranch: string }
 
@@ -36,46 +40,64 @@ function Card({
   onSelect: () => void
 }) {
   const filename = todo.filePath.split("/").pop() ?? todo.filePath
+  const { ref, dragging } = useDraggableCard(todo.id, todo.band)
 
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-pressed={selected}
-      className={`w-full rounded-lg border p-3 text-left transition-colors ${
-        selected
-          ? "border-neutral-900 dark:border-neutral-100"
-          : "border-neutral-200 hover:border-neutral-400 dark:border-neutral-800 dark:hover:border-neutral-600"
-      } bg-white dark:bg-neutral-900`}
-    >
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="font-mono text-[11px] font-semibold text-neutral-600 dark:text-neutral-300">
-          {todo.marker ?? todo.category}
-        </span>
-        <span className="flex items-center gap-1.5">
-          {todo.manualBand ? <ManualMark by={todo.manualBandBy} at={todo.manualBandAt} /> : null}
-          <span className="text-[11px] tabular-nums text-neutral-400">{todo.score}</span>
-        </span>
-      </div>
-
-      <p className="mt-1 truncate font-mono text-xs text-neutral-500 dark:text-neutral-400">
-        {filename}:{todo.line}
-      </p>
-      <p className="mt-2 line-clamp-3 text-xs text-neutral-700 dark:text-neutral-300">
-        {todo.text}
-      </p>
-      <p className="mt-2 flex items-center gap-2 text-[11px] text-neutral-400 dark:text-neutral-500">
-        <span>
-          {describeAge(todo.authoredAt)} · {describeChurn(todo.fileChurn)}
-        </span>
-        {/* Without this a discussion is invisible until the card is opened. */}
-        {commentCount > 0 ? (
-          <span title={`${commentCount} comment(s)`} className="ml-auto shrink-0">
-            💬 {commentCount}
+    <div ref={ref} className={dragging ? "opacity-40" : ""}>
+      <button
+        type="button"
+        onClick={onSelect}
+        aria-pressed={selected}
+        // `active:` covers the press before a drag actually starts, so the hand
+        // closes on mousedown rather than only once the card detaches.
+        className={`w-full rounded-lg border p-3 text-left transition-colors ${
+          dragging ? "cursor-grabbing" : "cursor-pointer active:cursor-grabbing"
+        } ${
+          selected
+            ? "border-neutral-900 dark:border-neutral-100"
+            : "border-neutral-200 hover:border-neutral-400 dark:border-neutral-800 dark:hover:border-neutral-600"
+        } ${
+          // Only visible when "show dismissed" is on, and then it must be obvious
+          // which rows are only there because you asked to see them.
+          todo.isValid === false ? "opacity-50" : ""
+        } bg-white dark:bg-neutral-900`}
+      >
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="font-mono text-[11px] font-semibold text-neutral-600 dark:text-neutral-300">
+            {todo.marker ?? todo.category}
           </span>
-        ) : null}
-      </p>
-    </button>
+          <span className="flex items-center gap-1.5">
+            {todo.isValid === false ? <DismissedChip by={todo.validBy} /> : null}
+            {todo.fixAnalyzedSha ? (
+              <AnalysedMark
+                fixable={todo.fixable}
+                stale={todo.fixAnalyzedSha !== todo.lastSeenSha}
+              />
+            ) : null}
+            {todo.manualBand ? <ManualMark by={todo.manualBandBy} at={todo.manualBandAt} /> : null}
+            <span className="text-[11px] tabular-nums text-neutral-400">{todo.score}</span>
+          </span>
+        </div>
+
+        <p className="mt-1 truncate font-mono text-xs text-neutral-500 dark:text-neutral-400">
+          {filename}:{todo.line}
+        </p>
+        <p className="mt-2 line-clamp-3 text-xs text-neutral-700 dark:text-neutral-300">
+          {todo.text}
+        </p>
+        <p className="mt-2 flex items-center gap-2 text-[11px] text-neutral-400 dark:text-neutral-500">
+          <span>
+            {describeAge(todo.authoredAt)} · {describeChurn(todo.fileChurn)}
+          </span>
+          {/* Without this a discussion is invisible until the card is opened. */}
+          {commentCount > 0 ? (
+            <span title={`${commentCount} comment(s)`} className="ml-auto shrink-0">
+              💬 {commentCount}
+            </span>
+          ) : null}
+        </p>
+      </button>
+    </div>
   )
 }
 
@@ -157,6 +179,11 @@ function FixAnalysis({ todo }: { todo: RankedTodo }) {
   const analysed = todo.fixAnalyzedSha !== null
   const stale = analysed && todo.fixAnalyzedSha !== todo.lastSeenSha
 
+  // The action returns the cached verdict unchanged when the file has not moved
+  // on, so offering the button then would spend a round trip to redraw the same
+  // thing — a control that appears broken because it effectively is.
+  const canRun = !analysed || stale
+
   function run() {
     setProblem(null)
     startTransition(async () => {
@@ -209,16 +236,77 @@ function FixAnalysis({ todo }: { todo: RankedTodo }) {
         </div>
       ) : null}
 
-      <button
-        type="button"
-        onClick={run}
-        disabled={pending}
-        className="w-full rounded bg-violet-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-violet-700 disabled:opacity-50"
-      >
-        {pending ? "Analysing…" : analysed ? "Re-analyse with Claude" : "Analyse with Claude"}
-      </button>
+      {canRun ? (
+        <button
+          type="button"
+          onClick={run}
+          disabled={pending}
+          className="w-full rounded bg-violet-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-violet-700 disabled:opacity-50"
+        >
+          {pending ? "Analysing…" : stale ? "Re-analyse with Claude" : "Analyse with Claude"}
+        </button>
+      ) : (
+        <p className="text-[11px] text-neutral-400">
+          Analysed against the current version of this file.
+        </p>
+      )}
 
       {problem ? <p className="mt-1 text-[11px] text-red-600">{problem}</p> : null}
+    </section>
+  )
+}
+
+/**
+ * "Is this a real TODO?" — feedback on detection, not on importance.
+ *
+ * Importance is already answered by the band, so this asks the one question the
+ * band cannot: should we have surfaced this at all. That is also the only
+ * question whose answer is usable later as training signal.
+ */
+function Validity({ todo, onDismissed }: { todo: RankedTodo; onDismissed: () => void }) {
+  const [pending, startTransition] = useTransition()
+
+  function answer(value: "yes" | "no" | "unset") {
+    startTransition(async () => {
+      await updateValidity(todo.id, value)
+      // A dismissed row leaves the board, so the panel showing it must close
+      // with it rather than linger over something no longer there.
+      if (value === "no") onDismissed()
+    })
+  }
+
+  const current = todo.isValid === null ? "unset" : todo.isValid ? "yes" : "no"
+
+  return (
+    <section className="mt-6 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+      <h3 className="mb-2 text-xs font-medium">Is this a real TODO?</h3>
+
+      <div className="flex gap-1.5">
+        {(["yes", "no"] as const).map((value) => (
+          <button
+            key={value}
+            type="button"
+            disabled={pending}
+            onClick={() => answer(current === value ? "unset" : value)}
+            aria-pressed={current === value}
+            className={`flex-1 rounded border px-3 py-1.5 text-xs capitalize transition-colors disabled:opacity-50 ${
+              current === value
+                ? "border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900"
+                : "border-neutral-300 text-neutral-600 hover:border-neutral-500 dark:border-neutral-700 dark:text-neutral-300"
+            }`}
+          >
+            {value}
+          </button>
+        ))}
+      </div>
+
+      <p className="mt-2 text-[11px] text-neutral-400">
+        {current === "unset"
+          ? "“No” hides it from the board. It is kept, and you can bring it back."
+          : `Answered ${current} by ${todo.validBy ?? "someone"}${
+              todo.validAt ? ` on ${formatDate(todo.validAt)}` : ""
+            }. Click again to undo.`}
+      </p>
     </section>
   )
 }
@@ -259,6 +347,8 @@ function Panel({
       </p>
 
       <p className="mt-4 text-xs text-neutral-600 dark:text-neutral-300">{describeRisk(todo)}</p>
+
+      <Validity todo={todo} onDismissed={onClose} />
 
       <FixAnalysis todo={todo} />
 
@@ -338,7 +428,38 @@ export function Board({
   comments: TodoCommentRow[]
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const selected = columns.flatMap((c) => c.todos).find((t) => t.id === selectedId) ?? null
+
+  /**
+   * Moves a card the instant it is dropped, before the server confirms.
+   *
+   * Without this the card snaps back to its old column and jumps again when the
+   * page revalidates, which reads as the drag having failed. React discards
+   * this state automatically once the action settles and fresh props arrive.
+   */
+  const [view, moveCard] = useOptimistic(
+    columns,
+    (current, move: { todoId: string; toBand: Band }) =>
+      current.map((column) => {
+        const moved = columns
+          .flatMap((c) => c.todos)
+          .find((todo) => todo.id === move.todoId)
+        if (!moved) return column
+
+        if (column.band === move.toBand) {
+          return { ...column, total: column.total + 1, todos: [{ ...moved, band: move.toBand }, ...column.todos] }
+        }
+        if (column.todos.some((todo) => todo.id === move.todoId)) {
+          return {
+            ...column,
+            total: Math.max(0, column.total - 1),
+            todos: column.todos.filter((todo) => todo.id !== move.todoId),
+          }
+        }
+        return column
+      }),
+  )
+
+  const selected = view.flatMap((c) => c.todos).find((t) => t.id === selectedId) ?? null
 
   const byTodo = new Map<string, TodoCommentRow[]>()
   for (const comment of comments) {
@@ -347,40 +468,54 @@ export function Board({
     else byTodo.set(comment.todoId, [comment])
   }
 
+  // One monitor for the whole board rather than a handler per column: the drop
+  // target carries the band it represents, so the move is read off the event.
+  useEffect(
+    () =>
+      monitorForElements({
+        onDrop({ source, location }) {
+          const target = location.current.dropTargets[0]
+          if (!target) return
+
+          const todoId = source.data.todoId as string
+          const toBand = target.data.band as Band
+          if (source.data.fromBand === toBand) return
+
+          startTransition(async () => {
+            moveCard({ todoId, toBand })
+            await updateSeverity(todoId, toBand)
+          })
+        },
+      }),
+    [moveCard],
+  )
+
   return (
     <>
       <div className="flex gap-4 overflow-x-auto pb-4">
-        {columns.map(({ band, total, todos }) => (
-          <section key={band} className="flex min-w-72 flex-1 flex-col">
-            <header className="mb-3 flex items-center gap-2">
-              <span className={`h-2 w-2 rounded-full ${COLUMN_ACCENT[band]}`} />
-              <h2 className="text-sm font-medium capitalize">{band}</h2>
-              <span className="text-xs tabular-nums text-neutral-400">{counts[band]}</span>
-            </header>
-
-            <div className="flex flex-col gap-2">
-              {todos.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-neutral-300 p-6 text-center text-xs text-neutral-400 dark:border-neutral-800">
-                  Nothing here
-                </p>
-              ) : (
-                todos.map((todo) => (
-                  <Card
-                    key={todo.id}
-                    todo={todo}
-                    commentCount={byTodo.get(todo.id)?.length ?? 0}
-                    selected={todo.id === selectedId}
-                    onSelect={() => setSelectedId(todo.id)}
-                  />
-                ))
-              )}
-              {total > todos.length ? (
-                <p className="pt-1 text-center text-[11px] text-neutral-400">
-                  + {total - todos.length} more
-                </p>
-              ) : null}
-            </div>
-          </section>
+        {view.map(({ band, total, todos }) => (
+          <Column key={band} band={band} total={total} count={counts[band]}>
+            {todos.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-neutral-300 p-6 text-center text-xs text-neutral-400 dark:border-neutral-800">
+                Nothing here
+              </p>
+            ) : (
+              todos.map((todo) => (
+                <Card
+                  key={todo.id}
+                  todo={todo}
+                  commentCount={byTodo.get(todo.id)?.length ?? 0}
+                  selected={todo.id === selectedId}
+                  onSelect={() => setSelectedId(todo.id)}
+                />
+              ))
+            )}
+            {total > todos.length ? (
+              <p className="pt-1 text-center text-[11px] text-neutral-400">
+                + {total - todos.length} more
+              </p>
+            ) : null}
+          </Column>
         ))}
       </div>
 
@@ -393,5 +528,35 @@ export function Board({
         />
       ) : null}
     </>
+  )
+}
+
+function Column({
+  band,
+  count,
+  children,
+}: {
+  band: Band
+  total: number
+  count: number
+  children: React.ReactNode
+}) {
+  const { ref, over } = useDropColumn(band)
+
+  return (
+    <section
+      ref={ref as React.RefObject<HTMLElement>}
+      className={`flex min-w-72 flex-1 flex-col rounded-lg p-1 transition-colors ${
+        over ? "bg-neutral-100 dark:bg-neutral-900" : ""
+      }`}
+    >
+      <header className="mb-3 flex items-center gap-2 px-1">
+        <span className={`h-2 w-2 rounded-full ${COLUMN_ACCENT[band]}`} />
+        <h2 className="text-sm font-medium capitalize">{band}</h2>
+        <span className="text-xs tabular-nums text-neutral-400">{count}</span>
+      </header>
+
+      <div className="flex flex-col gap-2">{children}</div>
+    </section>
   )
 }

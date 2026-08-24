@@ -137,6 +137,65 @@ export async function setManualBand(params: {
   return row ?? null
 }
 
+/**
+ * Records whether a person thinks this is a real TODO, or clears the answer.
+ *
+ * Same single-statement permission test as the other writes: the access check
+ * is a subquery in the WHERE clause, so there is no path that updates without
+ * having checked and no window between the two.
+ */
+export async function setValidity(params: {
+  todoId: string
+  isValid: boolean | null
+  by: string
+  installationIds: number[]
+}): Promise<{ repositoryId: number } | null> {
+  if (params.installationIds.length === 0) return null
+
+  const permitted = db
+    .select({ id: repositories.id })
+    .from(repositories)
+    .where(inArray(repositories.installationId, params.installationIds))
+
+  const [row] = await db
+    .update(todos)
+    .set({
+      isValid: params.isValid,
+      // Cleared with the answer: "decided by nobody, never" is the honest
+      // record once a row is back to unanswered.
+      validBy: params.isValid === null ? null : params.by,
+      validAt: params.isValid === null ? null : new Date(),
+    })
+    .where(and(eq(todos.id, params.todoId), inArray(todos.repositoryId, permitted)))
+    .returning({ repositoryId: todos.repositoryId })
+
+  return row ?? null
+}
+
+/**
+ * Every comment in a repository, oldest first.
+ *
+ * Scoped by repository rather than by a list of TODO ids so it can run
+ * alongside the card queries instead of after them — waiting for the ids added
+ * a serial ~96ms to every board render, which is most of what a filter click
+ * felt like. Comments are user-written and rare, so fetching the repository's
+ * whole set is cheaper than the round trip it replaces.
+ */
+export async function commentsForRepository(repositoryId: number): Promise<TodoCommentRow[]> {
+  return db
+    .select({
+      id: todoComments.id,
+      todoId: todoComments.todoId,
+      body: todoComments.body,
+      authorLogin: todoComments.authorLogin,
+      createdAt: todoComments.createdAt,
+    })
+    .from(todoComments)
+    .innerJoin(todos, eq(todos.id, todoComments.todoId))
+    .where(eq(todos.repositoryId, repositoryId))
+    .orderBy(todoComments.createdAt)
+}
+
 /** Comments for the TODOs currently on screen, oldest first. */
 export async function commentsFor(todoIds: string[]): Promise<TodoCommentRow[]> {
   if (todoIds.length === 0) return []
@@ -192,6 +251,35 @@ export async function addComment(params: {
 
   const row = rows[0]
   return row ? { repositoryId: Number(row.repository_id) } : null
+}
+
+/**
+ * One repository, only if it belongs to a caller's installation.
+ *
+ * The access check lives in the query rather than in the page: a repository id
+ * is a guessable URL, so filtering the list without also filtering the detail
+ * lookup would leave every repo readable by anyone who typed the right number.
+ * Null means both "does not exist" and "not yours", deliberately.
+ */
+export async function getRepository(id: number, installationIds: number[]) {
+  if (installationIds.length === 0) return null
+
+  const [row] = await db
+    .select()
+    .from(repositories)
+    .where(
+      and(eq(repositories.id, id), inArray(repositories.installationId, installationIds)),
+    )
+    .limit(1)
+
+  return row ?? null
+}
+
+export async function recordDeepScan(repositoryId: number, found: number): Promise<void> {
+  await db
+    .update(repositories)
+    .set({ deepScanAt: new Date(), deepScanFound: found })
+    .where(eq(repositories.id, repositoryId))
 }
 
 export interface TodoForAnalysis {

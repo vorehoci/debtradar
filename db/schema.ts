@@ -29,6 +29,17 @@ export const repositories = pgTable("repositories", {
   owner: text("owner").notNull(),
   name: text("name").notNull(),
   defaultBranch: text("default_branch").notNull(),
+
+  /**
+   * When Claude last read this repository's unmarked comments looking for TODOs
+   * nobody labelled.
+   *
+   * Recorded because the scan costs real money and takes minutes: without a
+   * visible "last run", the only way to know whether it is worth running again
+   * is to run it again.
+   */
+  deepScanAt: timestamp("deep_scan_at", { withTimezone: true }),
+  deepScanFound: integer("deep_scan_found"),
 })
 
 export const todos = pgTable(
@@ -102,6 +113,21 @@ export const todos = pgTable(
      * records which commit it was judged against, so a stale verdict is
      * recognisable rather than merely old.
      */
+    /**
+     * A person's answer to "is this a real TODO?".
+     *
+     * Deliberately separate from `manualBand`: the band says how much something
+     * matters, this says whether we should have surfaced it at all. Collapsing
+     * them would make the label useless as training signal, because "no" would
+     * mean either "you misread this comment" or "this is real but trivial".
+     *
+     * Null means nobody has said. False hides the row from the board without
+     * deleting it — a wrong answer must be reversible.
+     */
+    isValid: boolean("is_valid"),
+    validBy: text("valid_by"),
+    validAt: timestamp("valid_at", { withTimezone: true }),
+
     fixable: boolean("fixable"),
     fixScope: text("fix_scope"),
     fixSummary: text("fix_summary"),

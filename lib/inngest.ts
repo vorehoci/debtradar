@@ -18,6 +18,19 @@ export const seedRequested = eventType("repo/seed.requested", {
   }),
 })
 
+/** Emitted when someone asks Claude to read a repository's unmarked comments. */
+export const deepScanRequested = eventType("repo/deep-scan.requested", {
+  schema: z.object({
+    installationId: z.number(),
+    accountLogin: z.string(),
+    repositoryId: z.number(),
+    owner: z.string(),
+    repo: z.string(),
+    defaultBranch: z.string(),
+    headSha: z.string(),
+  }),
+})
+
 /** Emitted after a scan, to fill in blame, churn, and author activity. */
 export const enrichRequested = eventType("todos/enrich.requested", {
   schema: z.object({

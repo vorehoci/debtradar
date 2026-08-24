@@ -126,6 +126,27 @@ describe("commentTextIn", () => {
     expect(commentTextIn('const u = "https://x.com" // TODO: move to env', ts)).toBe("TODO: move to env")
   })
 
+  it("does not treat markdown as a block-comment continuation", () => {
+    // Markdown's only comment form is <!-- -->, but it has a block syntax, so a
+    // blanket `*` continuation rule turned every bullet and bold line into a
+    // comment and fed it to the classifier.
+    const md = commentSyntaxFor("README.md")!
+    expect(commentTextIn("*Warning (global regex has mutable state):**", md)).toBeUndefined()
+    expect(commentTextIn("* a bullet point", md)).toBeUndefined()
+    expect(commentTextIn("**Bold heading**", md)).toBeUndefined()
+  })
+
+  it("still reads a real markdown comment", () => {
+    const md = commentSyntaxFor("README.md")!
+    expect(commentTextIn("<!-- TODO: document the webhook -->", md)).toBe(
+      "TODO: document the webhook",
+    )
+  })
+
+  it("still reads a JSDoc continuation", () => {
+    expect(commentTextIn(" * TODO: handle expiry", ts)).toBe("TODO: handle expiry")
+  })
+
   it("returns undefined for code with no comment", () => {
     expect(commentTextIn("const x = 1", ts)).toBeUndefined()
   })

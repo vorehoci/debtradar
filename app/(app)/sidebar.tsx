@@ -19,6 +19,29 @@ function currentRepoId(pathname: string): number | null {
   return match ? Number(match[1]) : null
 }
 
+function NavLink({
+  href,
+  active,
+  children,
+}: {
+  href: string
+  active: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <Link
+      href={href}
+      className={`rounded px-2.5 py-1.5 text-sm transition-colors ${
+        active
+          ? "bg-neutral-200 font-medium text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100"
+          : "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
+      }`}
+    >
+      {children}
+    </Link>
+  )
+}
+
 export function Sidebar({ repos }: { repos: SidebarRepo[] }) {
   const pathname = usePathname()
   const repoId = currentRepoId(pathname)
@@ -40,10 +63,21 @@ export function Sidebar({ repos }: { repos: SidebarRepo[] }) {
       {active ? (
         <div className="mt-3 border-t border-neutral-200 pt-3 dark:border-neutral-800">
           <p className="px-2.5 text-[11px] uppercase tracking-wide text-neutral-400">Repository</p>
-          <p className="mt-1 px-2.5 text-sm font-medium break-words">
+          <p className="mt-1 mb-2 px-2.5 text-sm font-medium break-words">
             <span className="text-neutral-500 dark:text-neutral-400">{active.owner}/</span>
             {active.name}
           </p>
+
+          <div className="flex gap-1 sm:flex-col">
+            {/* `endsWith` rather than an exact match so the overview stays
+                highlighted if it ever grows sub-routes of its own. */}
+            <NavLink href={`/repos/${active.id}`} active={!pathname.endsWith("/board")}>
+              Overview
+            </NavLink>
+            <NavLink href={`/repos/${active.id}/board`} active={pathname.endsWith("/board")}>
+              Board
+            </NavLink>
+          </div>
         </div>
       ) : null}
     </nav>
