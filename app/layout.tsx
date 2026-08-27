@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { JetBrains_Mono, Space_Grotesk } from "next/font/google"
 import "./globals.css"
+import { Analytics } from "./analytics"
 
 /**
  * The interface family, replacing Inter across the whole site.
@@ -33,7 +34,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-surface text-ink">{children}</body>
+      <body className="flex min-h-full flex-col bg-surface text-ink">
+        {children}
+        <Analytics />
+      </body>
     </html>
   )
 }
