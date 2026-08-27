@@ -35,8 +35,9 @@ const STEPS: Step[] = [
     title: "Connect the repo",
     body: (
       <>
-        Install the GitHub App on the repositories you pick. Read access to code and metadata, and
-        it never writes to them. <span className="text-[#6c8579]">GitLab is planned.</span>
+        Install the GitHub App on the repositories you pick. It reads code and metadata, and the
+        only thing it writes back is a neutral check on your pull requests.{" "}
+        <span className="text-[#6c8579]">GitLab is planned.</span>
       </>
     ),
   },

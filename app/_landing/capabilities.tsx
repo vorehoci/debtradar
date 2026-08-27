@@ -102,8 +102,8 @@ const FEATURES: Feature[] = [
     ),
   },
   {
-    title: "Read-only by design",
-    body: "Read access to code and metadata, nothing more. debtradar never writes to your repository and never opens an issue.",
+    title: "It never changes your code",
+    body: "Read access to code and metadata. The one thing debtradar writes is a neutral check on a pull request — it never edits a file, opens an issue, or leaves a comment.",
     icon: (
       <Icon>
         <rect x="4" y="10" width="16" height="10" rx="2" />

@@ -75,7 +75,8 @@ export async function GetStarted({ installed }: { installed: boolean }) {
       </a>
 
       <p className="mt-4 text-xs text-faint">
-        debtradar asks for read access to code and metadata. It never writes to your repositories.
+        debtradar reads code and metadata. The only thing it writes is a neutral, non-blocking check
+        on pull requests — never your files.
       </p>
     </section>
   )

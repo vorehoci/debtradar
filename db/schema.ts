@@ -242,6 +242,26 @@ export const deepScanCandidates = pgTable(
   (table) => [primaryKey({ columns: [table.repositoryId, table.sha, table.seq] })],
 )
 
+/**
+ * Fixed-window counters for the operations that cost money.
+ *
+ * In Postgres rather than in the process, because the process is the wrong
+ * place on serverless. The previous counter was a Map held in memory, which was
+ * honest on one long-lived dev server and close to meaningless on Vercel: every
+ * instance kept its own tally and every cold start wiped it, so a limit of three
+ * a day was really three per instance per day with no ceiling on instances.
+ *
+ * The window arithmetic lives in SQL and uses the database clock. That is not
+ * fussiness — instances have no shared clock, and two of them disagreeing about
+ * when a window ends is how a limit quietly becomes a suggestion.
+ */
+export const rateLimits = pgTable("rate_limits", {
+  /** Scope of the limit, e.g. `deep-scan:154739845`. */
+  key: text("key").primaryKey(),
+  count: integer("count").notNull(),
+  resetAt: timestamp("reset_at", { withTimezone: true }).notNull(),
+})
+
 export type Todo = typeof todos.$inferSelect
 export type NewTodo = typeof todos.$inferInsert
 export type TodoComment = typeof todoComments.$inferSelect

@@ -6,7 +6,7 @@ import { listRepositories } from "@/db/repository"
 import { accessibleInstallationIds } from "@/lib/access"
 import { installationClient } from "@/lib/github"
 import { inngest, seedRequested } from "@/lib/inngest"
-import { consume } from "@/lib/rate-limit"
+import { consume } from "@/db/rate-limit"
 
 /**
  * Seeding is normally a webhook's job, so this is a recovery path.
@@ -58,7 +58,7 @@ export async function seedMyRepositories(): Promise<SeedResult> {
   // which only matters to somebody holding administrator access to several
   // accounts at once.
   for (const installationId of installationIds) {
-    const limit = consume(`seed:${installationId}`, SEEDS_PER_HOUR, HOUR_MS)
+    const limit = await consume(`seed:${installationId}`, SEEDS_PER_HOUR, HOUR_MS)
     if (!limit.allowed) return { state: "rate-limited", resetInSeconds: limit.resetInSeconds }
   }
 

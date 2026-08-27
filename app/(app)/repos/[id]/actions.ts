@@ -20,9 +20,16 @@ import { PAGE_SIZE } from "@/lib/paging"
 import { analyseFix, fetchFile } from "@/lib/fix-analysis"
 import { installationClient } from "@/lib/github"
 import { deepScanRequested, inngest } from "@/lib/inngest"
-import { consume } from "@/lib/rate-limit"
+import { consume } from "@/db/rate-limit"
 
-/** A spend guard, not a billing contract — see lib/rate-limit.ts. */
+/**
+ * A spend guard — see db/rate-limit.ts.
+ *
+ * It counts in Postgres now rather than in the process, so this is a real
+ * ceiling per installation rather than a ceiling per server instance. That
+ * distinction did not matter while the app was private and one person could
+ * install it; it is the whole guard once anybody can.
+ */
 const ANALYSES_PER_HOUR = 60
 const HOUR_MS = 60 * 60 * 1000
 
@@ -110,7 +117,7 @@ export async function analyseTodo(todoId: string): Promise<FixAnalysisResult> {
     return { state: "ok" }
   }
 
-  const limit = consume(`analyse:${todo.installationId}`, ANALYSES_PER_HOUR, HOUR_MS)
+  const limit = await consume(`analyse:${todo.installationId}`, ANALYSES_PER_HOUR, HOUR_MS)
   if (!limit.allowed) {
     return { state: "rate-limited", resetInSeconds: limit.resetInSeconds }
   }
@@ -161,7 +168,7 @@ export async function startDeepScan(repositoryId: number): Promise<DeepScanResul
   const repo = await getRepository(repositoryId, installationIds)
   if (!repo) throw new Error("Not found")
 
-  const limit = consume(`deep-scan:${repo.installationId}`, DEEP_SCANS_PER_DAY, DAY_MS)
+  const limit = await consume(`deep-scan:${repo.installationId}`, DEEP_SCANS_PER_DAY, DAY_MS)
   if (!limit.allowed) {
     return { state: "rate-limited", resetInSeconds: limit.resetInSeconds }
   }
