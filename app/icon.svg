@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="debtradar">
+  <!-- The tab-strip twin of the radar dial in app/brand.tsx: rim, trailing
+       sweep, centre blip. Two deliberate differences from the component.
+
+       It sits on a filled dark disc rather than a transparent ground. The mark
+       in the header can be transparent because it always lands on #070b09;
+       a favicon lands on whatever chrome the browser paints, and mint on a
+       white tab strip is 1.25:1 — invisible exactly where it has to be read.
+
+       The sweep is a wedge with a linear gradient, not a conic one: conic
+       gradients are CSS, and SVG has no equivalent. Across 110 degrees the
+       straight-line approximation is indistinguishable at 16px. It is also
+       static — Chrome does not animate SVG favicons, so the sweep is frozen
+       at the angle the animation looks best. -->
+  <defs>
+    <linearGradient id="sweep" gradientUnits="userSpaceOnUse" x1="3.78" y1="11.55" x2="24.36" y2="6.04">
+      <stop offset="0" stop-color="#6dffc6" stop-opacity="0"/>
+      <stop offset="1" stop-color="#6dffc6" stop-opacity=".6"/>
+    </linearGradient>
+  </defs>
+  <circle cx="16" cy="16" r="16" fill="#070b09"/>
+  <path d="M16 16 L3.78 11.55 A13 13 0 0 1 24.36 6.04 Z" fill="url(#sweep)"/>
+  <circle cx="16" cy="16" r="14" fill="none" stroke="#6dffc6" stroke-opacity=".55" stroke-width="1.8"/>
+  <circle cx="16" cy="16" r="3" fill="#6dffc6"/>
+</svg>

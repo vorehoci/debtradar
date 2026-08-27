@@ -1,11 +1,14 @@
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
-import { rankedTodos, type Source, todoCounts } from "@/db/ranking"
+import { ORPHAN_FILTER_DAYS, rankedTodos, type Source, todoCounts } from "@/db/ranking"
 import { commentsForRepository } from "@/db/repository"
 import { type Band, BANDS } from "@/lib/describe"
 import { currentRepositories } from "@/lib/session-repos"
+import { PAGE_SIZE } from "@/lib/paging"
 import { Legend } from "../legend"
 import { Board } from "./board-client"
+import { TodoList } from "./list-client"
+import { SearchBox } from "./search-box"
 
 export const dynamic = "force-dynamic"
 
@@ -19,8 +22,14 @@ export const dynamic = "force-dynamic"
  */
 const COLUMNS: Band[] = BANDS
 
-/** Deep enough to be useful, shallow enough that a column stays scannable. */
-const PER_COLUMN = 20
+/**
+ * The first page of each column.
+ *
+ * Deep enough to be useful, shallow enough that a column stays scannable — the
+ * rest is now reachable through "Load more" rather than being announced by a
+ * "+442 more" line and left there.
+ */
+const PER_COLUMN = PAGE_SIZE
 
 export default async function RepoBoard({
   params,
@@ -38,7 +47,24 @@ export default async function RepoBoard({
 
   const search = await searchParams
   const showDismissed = search.dismissed === "1"
+  /**
+   * Board unless asked otherwise.
+   *
+   * A URL parameter rather than component state so the choice survives a
+   * reload, is linkable, and is carried by every filter link below — the same
+   * reason `source`, `dismissed` and `q` live here.
+   */
+  const listView = search.view === "list"
+  /**
+   * The product thesis, finally given a control.
+   *
+   * Author inactivity is a fifth of the score and the thing the whole ranking
+   * argues for — a note nobody can explain any more — and until now the only
+   * way to act on it was to open rows one at a time and read the panel.
+   */
+  const orphaned = search.orphaned === "1"
   const source: Source | undefined = search.source === "claude" ? "claude" : undefined
+  const query = typeof search.q === "string" ? search.q.trim() : ""
 
   /**
    * Builds a board URL from both toggles at once.
@@ -47,12 +73,22 @@ export default async function RepoBoard({
    * silently switched the other off — the kind of thing that reads as the page
    * ignoring your click.
    */
-  const boardHref = (next: { source?: Source; dismissed?: boolean }) => {
+  const boardHref = (next: {
+    source?: Source
+    dismissed?: boolean
+    view?: boolean
+    orphaned?: boolean
+  }) => {
     const params = new URLSearchParams()
     if (next.source) params.set("source", next.source)
     if (next.dismissed) params.set("dismissed", "1")
-    const query = params.toString()
-    return `/repos/${repositoryId}/board${query ? `?${query}` : ""}`
+    // Carried for the same reason the two toggles carry each other: a chip that
+    // silently cleared the search would read as the board ignoring the click.
+    if (query) params.set("q", query)
+    if (next.view ?? listView) params.set("view", "list")
+    if (next.orphaned ?? orphaned) params.set("orphaned", "1")
+    const qs = params.toString()
+    return `/repos/${repositoryId}/board${qs ? `?${qs}` : ""}`
   }
 
   // The list is already scoped to this user's installations, so finding the
@@ -64,12 +100,14 @@ export default async function RepoBoard({
   // Everything in one wave, comments included — nothing here depends on
   // another's result, so a filter click costs one round trip rather than two.
   const [counts, comments, ...lists] = await Promise.all([
-    todoCounts(repositoryId, source),
+    todoCounts(repositoryId, source, query),
     commentsForRepository(repositoryId),
     ...COLUMNS.map((band) =>
       rankedTodos(repositoryId, {
         bands: [band],
         source,
+        search: query,
+        orphaned,
         limit: PER_COLUMN,
         includeDismissed: showDismissed,
       }),
@@ -83,15 +121,23 @@ export default async function RepoBoard({
   }))
 
   return (
-    <main className="w-full px-6 py-10">
-      <header className="mb-8 flex items-start justify-between gap-6">
+    <main className="w-full px-4 py-6 sm:px-6 sm:py-10">
+      {/* Stacked until `md:`. Side by side it was a row that could not wrap with
+          a `shrink-0` right half, so on a narrow window the title and chips were
+          squeezed into a sliver while search and the legend kept their full
+          width — and a long `owner/name` pushed the whole header off screen. */}
+      <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            <span className="text-neutral-500 dark:text-neutral-400">{repo.owner}/</span>
+          <h1 className="text-2xl font-semibold tracking-tight break-words">
+            <span className="text-muted">{repo.owner}/</span>
             {repo.name}
           </h1>
-          <p className="mt-1 flex flex-wrap items-center gap-x-3 text-sm text-neutral-500 dark:text-neutral-400">
-            <span>{counts.open} open · worst first in each column</span>
+          <p className="mt-1 flex flex-wrap items-center gap-x-3 text-sm text-muted">
+            <span>
+              {query
+                ? `${counts.open} matching “${query}”`
+                : `${counts.open} open · worst first in each column`}
+            </span>
 
             {/* Prefetched by Next in production, so the swap is usually instant;
                 in dev it is a live round trip and loading.tsx covers the gap. */}
@@ -105,10 +151,28 @@ export default async function RepoBoard({
                 className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
                   source === "claude"
                     ? "border-violet-600 bg-violet-600 text-white"
-                    : "border-neutral-300 hover:border-neutral-500 dark:border-neutral-700"
+                    : "border-edge-strong hover:border-edge-strong"
                 }`}
               >
                 Found by Claude{source === "claude" ? "" : ` (${counts.byClaude})`}
+              </Link>
+            ) : null}
+
+            {/* Amber rather than violet: this chip selects on risk, where the
+                Claude chip selects on provenance. Two filters in the same colour
+                would read as two halves of one control. */}
+            {counts.orphaned > 0 || orphaned ? (
+              <Link
+                href={boardHref({ source, dismissed: showDismissed, orphaned: !orphaned })}
+                aria-pressed={orphaned}
+                title={`Author inactive for over ${ORPHAN_FILTER_DAYS} days`}
+                className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
+                  orphaned
+                    ? "border-amber-600 bg-amber-600 text-white"
+                    : "border-edge-strong hover:border-edge-strong"
+                }`}
+              >
+                Author gone{orphaned ? "" : ` (${counts.orphaned})`}
               </Link>
             ) : null}
 
@@ -119,18 +183,45 @@ export default async function RepoBoard({
                 href={boardHref({ source, dismissed: !showDismissed })}
                 className="text-xs underline-offset-2 hover:underline"
               >
-                {showDismissed
-                  ? "hide dismissed"
-                  : `show ${counts.dismissed} dismissed`}
+                {showDismissed ? "hide dismissed" : `show ${counts.dismissed} dismissed`}
               </Link>
             ) : null}
           </p>
         </div>
 
-        <Legend />
+        <div className="flex flex-wrap items-center gap-3 md:shrink-0">
+          <SearchBox initial={query} />
+
+          <Legend />
+        </div>
       </header>
 
-      <Board columns={columns} counts={counts} repo={repo} comments={comments} />
+      {/* Both views read the same per-band pages the server already fetched;
+          only the presentation differs, so switching costs no extra query. */}
+      {listView ? (
+        <TodoList
+          columns={columns}
+          repo={repo}
+          comments={comments}
+          repositoryId={repositoryId}
+          source={source}
+          search={query}
+          includeDismissed={showDismissed}
+          orphaned={orphaned}
+        />
+      ) : (
+        <Board
+          columns={columns}
+          counts={counts}
+          repo={repo}
+          comments={comments}
+          repositoryId={repositoryId}
+          source={source}
+          search={query}
+          includeDismissed={showDismissed}
+          orphaned={orphaned}
+        />
+      )}
     </main>
   )
 }

@@ -2,13 +2,13 @@ import Image from "next/image"
 import Link from "next/link"
 import { signOut } from "@/auth"
 import type { SessionUser } from "@/lib/session-repos"
-import { Logo } from "./logo"
+import { Brand } from "@/app/brand"
 
 export function Header({ user }: { user: SessionUser }) {
   return (
-    <header className="flex items-center justify-between gap-4 border-b border-neutral-200 px-5 py-3 dark:border-neutral-800">
-      <Link href="/" aria-label="debtradar home">
-        <Logo className="h-5 w-auto text-[#07845d] dark:text-[#6dffc6]" />
+    <header className="flex items-center justify-between gap-4 border-b border-edge bg-panel px-5 py-3">
+      <Link href="/dashboard" aria-label="debtradar home">
+        <Brand className="text-[15px] text-ink" />
       </Link>
 
       <div className="flex items-center gap-3">
@@ -26,9 +26,7 @@ export function Header({ user }: { user: SessionUser }) {
           />
         ) : null}
 
-        <span className="hidden text-xs text-neutral-600 sm:inline dark:text-neutral-300">
-          {user.name}
-        </span>
+        <span className="hidden text-xs text-subtle sm:inline">{user.name}</span>
 
         <form
           action={async () => {
@@ -38,7 +36,7 @@ export function Header({ user }: { user: SessionUser }) {
         >
           <button
             type="submit"
-            className="cursor-pointer rounded border border-neutral-300 px-2.5 py-1 text-xs text-neutral-600 transition-colors hover:border-neutral-500 hover:text-neutral-900 dark:border-neutral-700 dark:text-neutral-300 dark:hover:text-neutral-100"
+            className="cursor-pointer rounded border border-edge-strong px-2.5 py-1 text-xs text-subtle transition-colors hover:border-edge-strong hover:text-ink"
           >
             Sign out
           </button>

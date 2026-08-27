@@ -4,6 +4,7 @@ import {
   index,
   integer,
   pgTable,
+  primaryKey,
   real,
   text,
   timestamp,
@@ -40,6 +41,15 @@ export const repositories = pgTable("repositories", {
    */
   deepScanAt: timestamp("deep_scan_at", { withTimezone: true }),
   deepScanFound: integer("deep_scan_found"),
+  /**
+   * The commit the last deep scan judged.
+   *
+   * Kept because the job is idempotent on the head sha: a second request for the
+   * same commit is dropped by Inngest and never runs, so without this the app
+   * cannot tell "queued" from "silently discarded" and would wait for a result
+   * that is never coming.
+   */
+  deepScanSha: text("deep_scan_sha"),
 })
 
 export const todos = pgTable(
@@ -128,6 +138,22 @@ export const todos = pgTable(
     validBy: text("valid_by"),
     validAt: timestamp("valid_at", { withTimezone: true }),
 
+    /**
+     * Hidden by a person because they do not want to see it — a triage
+     * decision, not a judgement about detection.
+     *
+     * Separate from `isValid` because the two were the same column and it
+     * ruined the label. Dismissing wrote `is_valid = false`, so the fastest way
+     * to clear a row was to declare it fake, and 23 of the first 29 "not a real
+     * TODO" answers landed on unambiguous `FIXME:` and `TODO:` comments in
+     * cal.com. The column meant to answer "did we misread this?" was recording
+     * "I do not care about this", which is the one thing it must not mean.
+     *
+     * Both hide a row. Only `isValid` is training signal.
+     */
+    dismissedAt: timestamp("dismissed_at", { withTimezone: true }),
+    dismissedBy: text("dismissed_by"),
+
     fixable: boolean("fixable"),
     fixScope: text("fix_scope"),
     fixSummary: text("fix_summary"),
@@ -164,6 +190,40 @@ export const todoComments = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("todo_comments_todo").on(table.todoId, table.createdAt)],
+)
+
+/**
+ * Unmarked comments waiting on Claude, for the life of one deep scan.
+ *
+ * A scratch table, not a record of anything. It exists because Inngest caps a
+ * single step output at 4 MiB and the collect step used to return every
+ * candidate it found — on a repository the size of cal.com that is roughly
+ * 20,000 of them, which lands on the cap. The step now writes them here and
+ * returns a count, and each classification step reads back only its own slice
+ * by `seq`. Nothing large crosses a step boundary any more.
+ *
+ * Rows are deleted when the run finishes. They are also deleted for the whole
+ * repository when a run starts, so an abandoned run cleans up after its
+ * successor rather than lingering forever.
+ *
+ * No id column: `(repository_id, sha, seq)` already identifies a row, and the
+ * primary key doubles as the index the slice query reads.
+ */
+export const deepScanCandidates = pgTable(
+  "deep_scan_candidates",
+  {
+    repositoryId: bigint("repository_id", { mode: "number" })
+      .notNull()
+      .references(() => repositories.id, { onDelete: "cascade" }),
+    /** Head commit of the run these belong to. */
+    sha: text("sha").notNull(),
+    /** Position in the collected order — the cursor the chunk steps page by. */
+    seq: integer("seq").notNull(),
+    filePath: text("file_path").notNull(),
+    line: integer("line").notNull(),
+    text: text("text").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.repositoryId, table.sha, table.seq] })],
 )
 
 export type Todo = typeof todos.$inferSelect

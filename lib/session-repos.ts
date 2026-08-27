@@ -14,6 +14,13 @@ export type SessionRepos =
   | {
       state: "ok"
       user: SessionUser
+      /**
+       * Carried so an empty repository list can be told apart from an empty
+       * *account*: no installations means the app was never installed, while
+       * installations with no repositories means it is installed and simply has
+       * not seen a push yet. Those two need opposite instructions.
+       */
+      installationIds: number[]
       repos: Awaited<ReturnType<typeof listRepositories>>
     }
 
@@ -38,6 +45,7 @@ export const currentRepositories = cache(async (): Promise<SessionRepos> => {
         name: session.user?.name ?? session.user?.email ?? "Signed in",
         image: session.user?.image ?? null,
       },
+      installationIds,
       repos: await listRepositories(installationIds),
     }
   } catch (error) {

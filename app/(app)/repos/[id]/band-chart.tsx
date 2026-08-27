@@ -23,7 +23,7 @@ export function BandChart({ counts }: { counts: Record<Band, number> }) {
   const widest = Math.max(1, ...BANDS.map((band) => counts[band]))
 
   if (total === 0) {
-    return <p className="text-sm text-neutral-500 dark:text-neutral-400">Nothing outstanding.</p>
+    return <p className="text-sm text-muted">Nothing outstanding.</p>
   }
 
   return (
@@ -34,13 +34,11 @@ export function BandChart({ counts }: { counts: Record<Band, number> }) {
 
         return (
           <div key={band} className="flex items-center gap-3">
-            <span className="w-20 shrink-0 text-xs capitalize text-neutral-600 dark:text-neutral-300">
-              {band}
-            </span>
+            <span className="w-20 shrink-0 text-xs capitalize text-subtle">{band}</span>
 
             {/* Scaled to the largest band rather than the total: with a long
                 tail the small bands would otherwise be invisible slivers. */}
-            <span className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-900">
+            <span className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-raised">
               <span
                 className="block h-full rounded-full"
                 style={{
@@ -50,8 +48,8 @@ export function BandChart({ counts }: { counts: Record<Band, number> }) {
               />
             </span>
 
-            <span className="w-20 shrink-0 text-right text-xs tabular-nums text-neutral-500 dark:text-neutral-400">
-              {count} <span className="text-neutral-400 dark:text-neutral-500">· {share}%</span>
+            <span className="w-20 shrink-0 text-right text-xs tabular-nums text-muted">
+              {count} <span className="text-faint">· {share}%</span>
             </span>
           </div>
         )

@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, isNull, or, type SQL, sql } from "drizzle-orm"
+import { and, asc, desc, eq, ilike, isNotNull, isNull, or, type SQL, sql } from "drizzle-orm"
 import { type Band, BAND_THRESHOLDS, WEIGHTS } from "@/lib/describe"
 
 import { db } from "./index"
@@ -135,10 +135,62 @@ function sourceFilter(source: Source | undefined): SQL | undefined {
   return undefined
 }
 
+/**
+ * Free-text match over the comment and its path.
+ *
+ * Both, not just the text: "auth" is as likely to mean "the auth module" as a
+ * word in the note, and a person searching a board does not want to think about
+ * which field they are searching.
+ *
+ * Escaped for LIKE — an underscore in a file path is otherwise a wildcard, so
+ * `board_client` would match `board-client` and every other single character.
+ */
+function searchFilter(search: string | undefined): SQL | undefined {
+  const term = search?.trim()
+  if (!term) return undefined
+
+  const pattern = `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
+  return or(ilike(todos.text, pattern), ilike(todos.filePath, pattern))
+}
+
+/**
+ * How long an author must have been silent to count as gone, for filtering.
+ *
+ * Not `ORPHAN_CAP_DAYS`. That is a scoring ceiling — the point where the
+ * orphan factor saturates at 1.0 — and using it here would surface only the
+ * fully saturated rows, which is a much smaller and later set than "nobody
+ * has touched this in half a year". Six months is a review cycle: long enough
+ * that the person has plainly moved on, short enough to catch it while the
+ * context still exists somewhere.
+ */
+export const ORPHAN_FILTER_DAYS = 180
+
+/**
+ * TODOs whose author has gone quiet.
+ *
+ * Bots and unknown authors are excluded rather than included. They score 0.5 —
+ * neutral — precisely because their silence says nothing, and a filter whose
+ * whole promise is "there is nobody left to ask" must not answer with rows
+ * where there was never anybody to ask in the first place.
+ */
+function orphanFilter(orphaned: boolean | undefined): SQL | undefined {
+  if (!orphaned) return undefined
+
+  return sql`
+    ${todos.authorLogin} is not null
+    and ${todos.authorLogin} !~* ${BOT_PATTERN}
+    and ${todos.authorLastActiveAt} is not null
+    and ${todos.authorLastActiveAt} < now() - make_interval(days => ${ORPHAN_FILTER_DAYS})`
+}
+
 export interface TodoQuery {
   bands?: Band[]
   source?: Source
+  /** Free text matched against the comment and the file path. */
+  search?: string
   limit?: number
+  /** Rows to skip, for loading a column beyond its first page. */
+  offset?: number
   /**
    * Include rows a person marked "not a real TODO".
    *
@@ -147,6 +199,8 @@ export interface TodoQuery {
    * label is the point of collecting it.
    */
   includeDismissed?: boolean
+  /** Only TODOs whose author has been inactive for `ORPHAN_FILTER_DAYS`. */
+  orphaned?: boolean
 }
 
 /**
@@ -157,11 +211,28 @@ export interface TodoQuery {
  * tomorrow. The components come back alongside it so the UI can show why a row
  * ranks where it does — an unexplained ranking is one nobody trusts.
  */
-/** Rows nobody has dismissed. `isValid` is null until somebody answers. */
-const notDismissed = or(isNull(todos.isValid), eq(todos.isValid, true))
+/**
+ * Rows still on the board.
+ *
+ * Two independent ways to be off it, and they mean different things: somebody
+ * dismissed it, or somebody said we misread the comment. Either hides the row;
+ * only the second is training signal.
+ */
+const notDismissed = and(
+  isNull(todos.dismissedAt),
+  or(isNull(todos.isValid), eq(todos.isValid, true)),
+)
 
 export async function rankedTodos(repositoryId: number, query: TodoQuery = {}) {
-  const { bands = [], source, limit = 25, includeDismissed = false } = query
+  const {
+    bands = [],
+    source,
+    search,
+    limit = 25,
+    offset = 0,
+    includeDismissed = false,
+    orphaned = false,
+  } = query
 
   return db
     .select({
@@ -179,6 +250,8 @@ export async function rankedTodos(repositoryId: number, query: TodoQuery = {}) {
       isValid: todos.isValid,
       validBy: todos.validBy,
       validAt: todos.validAt,
+      dismissedAt: todos.dismissedAt,
+      dismissedBy: todos.dismissedBy,
       band: effectiveBand,
       fixable: todos.fixable,
       fixScope: todos.fixScope,
@@ -203,11 +276,18 @@ export async function rankedTodos(repositoryId: number, query: TodoQuery = {}) {
         isNull(todos.resolvedAt),
         bandFilter(bands),
         sourceFilter(source),
+        searchFilter(search),
+        orphanFilter(orphaned),
         includeDismissed ? undefined : notDismissed,
       ),
     )
-    .orderBy(desc(scoreExpression))
+    // Ties broken by id, because scores collide often — a column of 300 rows
+    // has long runs of the same integer, and without a deterministic second key
+    // Postgres may order them differently between the first page and the next,
+    // which shows up as rows repeating or vanishing when you load more.
+    .orderBy(desc(scoreExpression), asc(todos.id))
     .limit(limit)
+    .offset(offset)
 }
 
 export type RankedTodo = Awaited<ReturnType<typeof rankedTodos>>[number]
@@ -219,29 +299,43 @@ export type RankedTodo = Awaited<ReturnType<typeof rankedTodos>>[number]
  * 357 open TODOs reported "50 open" — the page limit presented as a fact about
  * the codebase.
  */
-export async function todoCounts(repositoryId: number, source?: Source) {
+export async function todoCounts(repositoryId: number, source?: Source, search?: string) {
   // Band counts exclude dismissed rows so the column headers agree with the
   // cards under them; `dismissed` is counted separately so the board can offer
   // to show them without the numbers double-counting.
   const band = (b: Band) =>
     sql<number>`count(*) filter (
       where ${effectiveBand} = ${b}
+        and ${todos.dismissedAt} is null
         and (${todos.isValid} is null or ${todos.isValid} = true)
     )::int`
 
   const [row] = await db
     .select({
       open: sql<number>`count(*) filter (
-        where ${todos.isValid} is null or ${todos.isValid} = true
+        where ${todos.dismissedAt} is null
+          and (${todos.isValid} is null or ${todos.isValid} = true)
       )::int`,
       critical: band("critical"),
       high: band("high"),
       moderate: band("moderate"),
       low: band("low"),
-      dismissed: sql<number>`count(*) filter (where ${todos.isValid} = false)::int`,
+      dismissed: sql<number>`count(*) filter (
+        where ${todos.dismissedAt} is not null or ${todos.isValid} = false
+      )::int`,
       /** Total found by the classifier, so the filter chip can show its size. */
       byClaude: sql<number>`count(*) filter (
         where ${todos.category} is not null
+          and ${todos.dismissedAt} is null
+          and (${todos.isValid} is null or ${todos.isValid} = true)
+      )::int`,
+      /** Same, for the orphan chip. Must use the same rule as `orphanFilter`. */
+      orphaned: sql<number>`count(*) filter (
+        where ${todos.authorLogin} is not null
+          and ${todos.authorLogin} !~* ${BOT_PATTERN}
+          and ${todos.authorLastActiveAt} is not null
+          and ${todos.authorLastActiveAt} < now() - make_interval(days => ${ORPHAN_FILTER_DAYS})
+          and ${todos.dismissedAt} is null
           and (${todos.isValid} is null or ${todos.isValid} = true)
       )::int`,
     })
@@ -253,10 +347,22 @@ export async function todoCounts(repositoryId: number, source?: Source) {
         eq(todos.repositoryId, repositoryId),
         isNull(todos.resolvedAt),
         sourceFilter(source),
+        searchFilter(search),
       ),
     )
 
-  return row ?? { open: 0, critical: 0, high: 0, moderate: 0, low: 0, dismissed: 0, byClaude: 0 }
+  return (
+    row ?? {
+      open: 0,
+      critical: 0,
+      high: 0,
+      moderate: 0,
+      low: 0,
+      dismissed: 0,
+      byClaude: 0,
+      orphaned: 0,
+    }
+  )
 }
 
 export type TodoCounts = Awaited<ReturnType<typeof todoCounts>>

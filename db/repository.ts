@@ -1,11 +1,11 @@
-import { and, eq, inArray, isNull, sql } from "drizzle-orm"
+import { and, asc, eq, gte, inArray, isNull, lt, or, sql } from "drizzle-orm"
 import type { Band } from "@/lib/describe"
 import { fingerprint } from "@/lib/fingerprint"
 import { effectiveBand } from "./ranking"
 import { MAX_COMMENT_LENGTH, type TodoCommentRow } from "@/lib/todo-comments"
 import type { CommentCandidate } from "@/lib/todos"
 import { db } from "./index"
-import { installations, repositories, todoComments, todos } from "./schema"
+import { deepScanCandidates, installations, repositories, todoComments, todos } from "./schema"
 
 export interface FoundTodo extends CommentCandidate {
   category?: string | null
@@ -91,12 +91,7 @@ export async function listRepositories(installationIds: number[]) {
       // emits unqualified column names, which then bind to the wrong table.
       .leftJoin(todos, eq(todos.repositoryId, repositories.id))
       .where(inArray(repositories.installationId, installationIds))
-      .groupBy(
-        repositories.id,
-        repositories.owner,
-        repositories.name,
-        repositories.defaultBranch,
-      )
+      .groupBy(repositories.id, repositories.owner, repositories.name, repositories.defaultBranch)
       .orderBy(repositories.owner, repositories.name)
   )
 }
@@ -207,6 +202,63 @@ export const MAX_BULK_DISMISS = 200
  * those rows rather than failing the whole call — a partial success is the
  * honest outcome when the request was partly illegitimate.
  */
+/** Puts dismissed rows back on the board. A wrong click must be reversible. */
+export async function restoreTodos(params: {
+  todoIds: string[]
+  installationIds: number[]
+}): Promise<{ restored: number; repositoryId: number | null }> {
+  const ids = params.todoIds.slice(0, MAX_BULK_DISMISS)
+  if (ids.length === 0 || params.installationIds.length === 0) {
+    return { restored: 0, repositoryId: null }
+  }
+
+  const permitted = db
+    .select({ id: repositories.id })
+    .from(repositories)
+    .where(inArray(repositories.installationId, params.installationIds))
+
+  const rows = await db
+    .update(todos)
+    .set({ dismissedAt: null, dismissedBy: null })
+    .where(and(inArray(todos.id, ids), inArray(todos.repositoryId, permitted)))
+    .returning({ repositoryId: todos.repositoryId })
+
+  return { restored: rows.length, repositoryId: rows[0]?.repositoryId ?? null }
+}
+
+/**
+ * Marks several rows as things we should never have surfaced.
+ *
+ * The sibling of `dismissTodos`, and deliberately a separate function writing
+ * separate columns. Batch misdetection is the single most valuable label this
+ * product can collect — when the classifier misfires it usually misfires on a
+ * pattern, so forty rows at once say far more about what is wrong than forty
+ * scattered ones would.
+ */
+export async function markNotTodos(params: {
+  todoIds: string[]
+  by: string
+  installationIds: number[]
+}): Promise<{ marked: number; repositoryId: number | null }> {
+  const ids = params.todoIds.slice(0, MAX_BULK_DISMISS)
+  if (ids.length === 0 || params.installationIds.length === 0) {
+    return { marked: 0, repositoryId: null }
+  }
+
+  const permitted = db
+    .select({ id: repositories.id })
+    .from(repositories)
+    .where(inArray(repositories.installationId, params.installationIds))
+
+  const rows = await db
+    .update(todos)
+    .set({ isValid: false, validBy: params.by, validAt: new Date() })
+    .where(and(inArray(todos.id, ids), inArray(todos.repositoryId, permitted)))
+    .returning({ repositoryId: todos.repositoryId })
+
+  return { marked: rows.length, repositoryId: rows[0]?.repositoryId ?? null }
+}
+
 export async function dismissTodos(params: {
   todoIds: string[]
   by: string
@@ -222,9 +274,11 @@ export async function dismissTodos(params: {
     .from(repositories)
     .where(inArray(repositories.installationId, params.installationIds))
 
+  // Writes the dismissal columns, never `isValid`. Those were one field, and
+  // sharing it meant every dismissal was recorded as a detection error.
   const rows = await db
     .update(todos)
-    .set({ isValid: false, validBy: params.by, validAt: new Date() })
+    .set({ dismissedAt: new Date(), dismissedBy: params.by })
     .where(and(inArray(todos.id, ids), inArray(todos.repositoryId, permitted)))
     .returning({ repositoryId: todos.repositoryId })
 
@@ -302,18 +356,20 @@ export async function getRepository(id: number, installationIds: number[]) {
   const [row] = await db
     .select()
     .from(repositories)
-    .where(
-      and(eq(repositories.id, id), inArray(repositories.installationId, installationIds)),
-    )
+    .where(and(eq(repositories.id, id), inArray(repositories.installationId, installationIds)))
     .limit(1)
 
   return row ?? null
 }
 
-export async function recordDeepScan(repositoryId: number, found: number): Promise<void> {
+export async function recordDeepScan(
+  repositoryId: number,
+  found: number,
+  sha: string,
+): Promise<void> {
   await db
     .update(repositories)
-    .set({ deepScanAt: new Date(), deepScanFound: found })
+    .set({ deepScanAt: new Date(), deepScanFound: found, deepScanSha: sha })
     .where(eq(repositories.id, repositoryId))
 }
 
@@ -362,12 +418,7 @@ export async function todoForAnalysis(
     })
     .from(todos)
     .innerJoin(repositories, eq(repositories.id, todos.repositoryId))
-    .where(
-      and(
-        eq(todos.id, todoId),
-        inArray(repositories.installationId, installationIds),
-      ),
-    )
+    .where(and(eq(todos.id, todoId), inArray(repositories.installationId, installationIds)))
     .limit(1)
 
   return row ?? null
@@ -400,21 +451,42 @@ export interface PendingTodo {
   line: number
 }
 
-/** Open TODOs in this repo that enrichment has not touched yet. */
-export async function unenrichedTodos(
-  repositoryId: number,
-  limit = 200,
-): Promise<PendingTodo[]> {
+/**
+ * How long an enrichment stays believable.
+ *
+ * `file_churn` and `author_last_active_at` are two of the four ranking signals,
+ * and both are statements about the present: how hot this file is *now*, and
+ * whether the author is still around *now*. This query used to ask only for
+ * rows with no enrichment at all, so every row was measured once and never
+ * again — a year later the board would still be ranking a departed author as
+ * active, and saying so in the panel.
+ *
+ * Thirty days is chosen against what the values can do in that time rather than
+ * from habit: annual churn barely moves in a month, and `ORPHAN_CAP_DAYS` is a
+ * year, so a month is at most a twelfth of that scale.
+ */
+export const ENRICHMENT_TTL_DAYS = 30
+
+/**
+ * Open TODOs whose enrichment is missing or stale.
+ *
+ * Never-enriched rows come first: they have no author and no churn at all, so
+ * they are ranked on two signals out of four until this runs.
+ */
+export async function unenrichedTodos(repositoryId: number, limit = 200): Promise<PendingTodo[]> {
+  const staleBefore = new Date(Date.now() - ENRICHMENT_TTL_DAYS * 24 * 60 * 60 * 1000)
+
   return db
     .select({ id: todos.id, filePath: todos.filePath, line: todos.line })
     .from(todos)
     .where(
       and(
         eq(todos.repositoryId, repositoryId),
-        isNull(todos.enrichedAt),
         isNull(todos.resolvedAt),
+        or(isNull(todos.enrichedAt), lt(todos.enrichedAt, staleBefore)),
       ),
     )
+    .orderBy(sql`${todos.enrichedAt} asc nulls first`)
     .limit(limit)
 }
 
@@ -530,4 +602,92 @@ export async function recordScan(params: {
   }
 
   return { seen: byPrint.size, resolved }
+}
+
+/**
+ * Postgres allows 65,535 bound parameters in one statement, and each candidate
+ * binds six columns. 5,000 rows is 30,000 parameters — comfortably inside the
+ * limit with room for the number of columns to grow.
+ */
+const STAGE_BATCH = 5_000
+
+/**
+ * Parks a deep scan's unmarked comments where the classification steps can page
+ * through them, and returns how many there are.
+ *
+ * The delete covers the whole repository rather than this run's sha: a run that
+ * dies between staging and cleanup would otherwise leave its rows behind
+ * forever, and only the next run is ever in a position to notice.
+ *
+ * Deduplicated here by the same `(file, text)` fingerprint the todos table uses.
+ * It has to happen before the slicing, not inside it — two identical comments
+ * that fall either side of a chunk boundary would otherwise be classified twice
+ * and counted twice, and paying Claude to answer the same question twice is the
+ * cheaper half of that problem.
+ */
+export async function stageDeepScanCandidates(params: {
+  repositoryId: number
+  sha: string
+  candidates: CommentCandidate[]
+}): Promise<number> {
+  await db
+    .delete(deepScanCandidates)
+    .where(eq(deepScanCandidates.repositoryId, params.repositoryId))
+
+  const byPrint = new Map<string, CommentCandidate>()
+  for (const candidate of params.candidates) {
+    byPrint.set(fingerprint(candidate.file, candidate.text), candidate)
+  }
+
+  const rows = [...byPrint.values()].map((candidate, seq) => ({
+    repositoryId: params.repositoryId,
+    sha: params.sha,
+    seq,
+    filePath: candidate.file,
+    line: candidate.line,
+    text: candidate.text,
+  }))
+
+  for (let start = 0; start < rows.length; start += STAGE_BATCH) {
+    await db.insert(deepScanCandidates).values(rows.slice(start, start + STAGE_BATCH))
+  }
+
+  return rows.length
+}
+
+/**
+ * One chunk of staged candidates, in the order they were collected.
+ *
+ * `marker` is always null: the collect step only stages comments the regex pass
+ * did not flag, which is the entire point of the deep scan.
+ */
+export async function deepScanCandidateSlice(params: {
+  repositoryId: number
+  sha: string
+  start: number
+  limit: number
+}): Promise<CommentCandidate[]> {
+  const rows = await db
+    .select({
+      file: deepScanCandidates.filePath,
+      line: deepScanCandidates.line,
+      text: deepScanCandidates.text,
+    })
+    .from(deepScanCandidates)
+    .where(
+      and(
+        eq(deepScanCandidates.repositoryId, params.repositoryId),
+        eq(deepScanCandidates.sha, params.sha),
+        gte(deepScanCandidates.seq, params.start),
+      ),
+    )
+    .orderBy(asc(deepScanCandidates.seq))
+    .limit(params.limit)
+
+  return rows.map((row) => ({ ...row, marker: null }))
+}
+
+/** Drops a finished run's scratch rows. */
+export async function clearDeepScanCandidates(repositoryId: number): Promise<void> {
+  await db.delete(deepScanCandidates).where(eq(deepScanCandidates.repositoryId, repositoryId))
 }

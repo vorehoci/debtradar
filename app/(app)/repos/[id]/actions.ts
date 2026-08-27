@@ -2,9 +2,12 @@
 
 import { revalidatePath } from "next/cache"
 import { auth } from "@/auth"
+import { rankedTodos, type RankedTodo, type Source } from "@/db/ranking"
 import {
   addComment,
   dismissTodos,
+  markNotTodos,
+  restoreTodos,
   getRepository,
   saveFixAnalysis,
   setManualBand,
@@ -12,7 +15,8 @@ import {
   todoForAnalysis,
 } from "@/db/repository"
 import { accessibleInstallationIds } from "@/lib/access"
-import { parseBand } from "@/lib/describe"
+import { type Band, parseBand } from "@/lib/describe"
+import { PAGE_SIZE } from "@/lib/paging"
 import { analyseFix, fetchFile } from "@/lib/fix-analysis"
 import { installationClient } from "@/lib/github"
 import { deepScanRequested, inngest } from "@/lib/inngest"
@@ -36,11 +40,11 @@ const DAY_MS = 24 * HOUR_MS
 export type DeepScanResult =
   | { state: "queued" }
   | { state: "rate-limited"; resetInSeconds: number }
+  /** This commit has already been judged; a queued job would be discarded. */
+  | { state: "unchanged"; found: number }
 
 export type FixAnalysisResult =
-  | { state: "ok" }
-  | { state: "rate-limited"; resetInSeconds: number }
-  | { state: "unreadable" }
+  { state: "ok" } | { state: "rate-limited"; resetInSeconds: number } | { state: "unreadable" }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -67,7 +71,7 @@ async function callerContext(todoId: string) {
 
 function revalidate(repositoryId: number) {
   revalidatePath(`/repos/${repositoryId}`)
-  revalidatePath("/")
+  revalidatePath("/dashboard")
 }
 
 /** Overrides a TODO's band, or returns it to automatic for an unknown value. */
@@ -169,6 +173,18 @@ export async function startDeepScan(repositoryId: number): Promise<DeepScanResul
     ref: `heads/${repo.defaultBranch}`,
   })
 
+  /**
+   * Caught here rather than left to the queue.
+   *
+   * The job is idempotent on the head sha, so a second request for a commit it
+   * has already judged is dropped by Inngest and never runs. Sending it anyway
+   * looks identical to a successful queue from the browser, which then waits for
+   * a completion that cannot arrive. Answering directly is truthful and instant.
+   */
+  if (repo.deepScanSha === ref.object.sha) {
+    return { state: "unchanged", found: repo.deepScanFound ?? 0 }
+  }
+
   await inngest.send(
     deepScanRequested.create({
       installationId: repo.installationId,
@@ -234,6 +250,130 @@ export async function dismissMany(todoIds: string[]): Promise<{ dismissed: numbe
   return { dismissed: result.dismissed }
 }
 
+/**
+ * Fetches the next page of one column.
+ *
+ * The board showed the top 20 of each band and a "+442 more" line, which named
+ * the problem without solving it: on a repository the size of cal.com most of
+ * the backlog was simply unreachable. Paging one column at a time rather than
+ * re-rendering the page keeps the other three columns, the scroll position and
+ * any selection exactly where they were.
+ */
+export async function loadMoreTodos(params: {
+  repositoryId: number
+  band: string
+  offset: number
+  source?: string
+  search?: string
+  includeDismissed?: boolean
+  orphaned?: boolean
+}): Promise<RankedTodo[]> {
+  const session = await auth()
+  if (!session?.accessToken) throw new Error("Not signed in")
+
+  const installationIds = await accessibleInstallationIds(session.accessToken)
+  const repo = await getRepository(params.repositoryId, installationIds)
+  if (!repo) throw new Error("Not found")
+
+  // Everything below comes from the client, so each value is narrowed to what
+  // the query accepts rather than passed through.
+  const band: Band | null = parseBand(params.band)
+  if (!band) throw new Error("Not found")
+  const source: Source | undefined = params.source === "claude" ? "claude" : undefined
+  const offset = Number.isFinite(params.offset) ? Math.max(0, Math.trunc(params.offset)) : 0
+
+  return rankedTodos(params.repositoryId, {
+    bands: [band],
+    source,
+    search: params.search,
+    limit: PAGE_SIZE,
+    offset,
+    includeDismissed: params.includeDismissed === true,
+    orphaned: params.orphaned === true,
+  })
+}
+
+/**
+ * Puts a dismissed row back on the board.
+ *
+ * Dismissal is a judgement call made in a second, so it needs an undo that is
+ * equally cheap — otherwise people hesitate over every one, which is exactly
+ * the friction bulk dismiss was built to remove.
+ */
+export async function restoreTodo(todoId: string) {
+  const { installationIds } = await callerContext(todoId)
+
+  const result = await restoreTodos({ todoIds: [todoId], installationIds })
+  if (result.repositoryId === null) throw new Error("Not found")
+
+  revalidate(result.repositoryId)
+}
+
+/** Lines of code shown either side of the comment. */
+const CONTEXT_RADIUS = 8
+
+export type CodeContext = { startLine: number; lines: string[] } | null
+
+/**
+ * The lines around a finding, for the detail panel.
+ *
+ * Judging a TODO from the comment alone is guessing. The only way to see the
+ * code was "Open on GitHub", which ends the triage session — you are now in
+ * another tab reading a file instead of working a board. Eight lines either
+ * side is usually enough to tell a note from a landmine.
+ *
+ * Fetched on demand rather than stored: file contents are large, they go stale
+ * on every push, and most rows are never opened.
+ */
+export async function codeContext(todoId: string): Promise<CodeContext> {
+  const { installationIds } = await callerContext(todoId)
+
+  const todo = await todoForAnalysis(todoId, installationIds)
+  if (!todo) throw new Error("Not found")
+
+  const octokit = await installationClient(todo.installationId)
+  const source = await fetchFile(octokit, {
+    owner: todo.owner,
+    repo: todo.name,
+    path: todo.filePath,
+    ref: todo.lastSeenSha,
+  })
+
+  if (source === null) return null
+
+  const all = source.split(/\r?\n/)
+  // `todo.line` is 1-based, as it comes from the diff and the tree walk.
+  const start = Math.max(1, todo.line - CONTEXT_RADIUS)
+  const end = Math.min(all.length, todo.line + CONTEXT_RADIUS)
+
+  return { startLine: start, lines: all.slice(start - 1, end) }
+}
+
+/**
+ * Marks several findings as misdetections in one go.
+ *
+ * Shares every guard with `dismissMany` and differs only in which columns it
+ * writes — which is the whole point: these two used to be one call, and the
+ * bulk bar was labelled "Not real TODOs" while recording a dismissal.
+ */
+export async function markManyNotTodo(todoIds: string[]): Promise<{ marked: number }> {
+  const session = await auth()
+  if (!session?.accessToken) throw new Error("Not signed in")
+
+  const ids = todoIds.filter((id) => UUID.test(id))
+  if (ids.length === 0) return { marked: 0 }
+
+  const installationIds = await accessibleInstallationIds(session.accessToken)
+  const result = await markNotTodos({
+    todoIds: ids,
+    by: session.user?.name ?? session.user?.email ?? "unknown",
+    installationIds,
+  })
+
+  if (result.repositoryId !== null) revalidate(result.repositoryId)
+  return { marked: result.marked }
+}
+
 export async function postComment(todoId: string, body: string) {
   const { installationIds, who } = await callerContext(todoId)
 
@@ -241,4 +381,31 @@ export async function postComment(todoId: string, body: string) {
   if (!added) throw new Error("Not found")
 
   revalidate(added.repositoryId)
+}
+
+export type DeepScanStatus = { at: string | null; found: number | null }
+
+/**
+ * The last completed deep scan for a repository.
+ *
+ * Polled by the button while a scan is queued. Inngest runs the job outside the
+ * request, so there is no connection to hold open and nothing to push down — the
+ * only honest signal available to the browser is that `deep_scan_at` has moved.
+ *
+ * A `Date` is serialised to a string on the way out. Comparing two ISO strings
+ * from the same source is a correct ordering test and avoids re-hydrating a
+ * `Date` on the client only to call `getTime()` on it.
+ */
+export async function deepScanStatus(repositoryId: number): Promise<DeepScanStatus> {
+  const session = await auth()
+  if (!session?.accessToken) throw new Error("Not signed in")
+
+  const installationIds = await accessibleInstallationIds(session.accessToken)
+  const repo = await getRepository(repositoryId, installationIds)
+  if (!repo) throw new Error("Not found")
+
+  return {
+    at: repo.deepScanAt ? repo.deepScanAt.toISOString() : null,
+    found: repo.deepScanFound,
+  }
 }

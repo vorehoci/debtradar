@@ -1,0 +1,1 @@
+ALTER TABLE "repositories" ADD COLUMN "deep_scan_sha" text;

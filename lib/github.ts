@@ -18,6 +18,30 @@ export function githubApp(): App {
   return cached
 }
 
+let installUrl: string | undefined
+
+/**
+ * Where a signed-in user goes to install the app on their account.
+ *
+ * The URL is built from the app's slug, which is asked of GitHub rather than
+ * kept in an environment variable: the slug is derived from the app's name and
+ * changes if the app is renamed, so a hardcoded copy would send people to a 404
+ * at exactly the moment they were trying to sign up.
+ *
+ * Cached for the life of the process — one request, and the answer only changes
+ * on a rename.
+ */
+export async function appInstallUrl(): Promise<string> {
+  if (installUrl) return installUrl
+
+  const { data } = await githubApp().octokit.rest.apps.getAuthenticated()
+  if (!data) throw new Error("GitHub did not return the app")
+
+  // `html_url` is the app's public page; GitHub appends the install flow to it.
+  installUrl = `${data.html_url}/installations/new`
+  return installUrl
+}
+
 /**
  * An Octokit client authenticated as one installation.
  *

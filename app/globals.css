@@ -1,26 +1,155 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /*
+   * Tells the browser its own widgets are on a dark page.
+   *
+   * Without it the UA keeps its light defaults for things CSS cannot reach:
+   * the native select popup, scrollbars, the clear button inside a search
+   * input, and form control focus rings. Those render as white rectangles on
+   * an otherwise dark app, and no amount of `bg-` classes fixes them.
+   */
+  color-scheme: dark;
+
+  --background: #070b09;
+  --foreground: #e8f2ec;
+
+  /*
+   * Mint everywhere now. This used to resolve to a darker green on light
+   * surfaces, because mint measures 1.25:1 on white — invisible rather than
+   * merely low-contrast. There are no light surfaces left.
+   */
+  --brand-accent: #6dffc6;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-space-grotesk);
+  --font-mono: var(--font-jetbrains-mono);
+
+  /*
+   * The two accents. `mint` is the brand and every affirmative control; `signal`
+   * is reserved for debt itself — a hotspot, a critical band, a count going the
+   * wrong way. Keeping red to that one meaning is what makes it read as an
+   * alarm rather than as decoration.
+   */
+  --color-mint: #6dffc6;
+  --color-signal: #ff1d4d;
+
+  /*
+   * The third accent, for the middle of the severity scale. Two colours could
+   * only say "fine" or "on fire", which collapses `high` and `moderate` into
+   * whichever neighbour they sit nearer; amber gives the scale a middle.
+   */
+  --color-caution: #ffb020;
+
+  /* Landing-page surface: near-black with a green cast, so mint glows on it. */
+  --color-abyss: #04100d;
+  --color-ink: #eafff7;
+  --color-muted: #7fa79c;
+  --color-subtle: #9dc0b7;
+
+  /*
+   * The application surface scale, lightest-on-top.
+   *
+   * The app used to be a neutral light/dark theme while the landing page and the
+   * list view were hardcoded dark, so in light mode the list rendered as a black
+   * card on a white page. Rather than give the list a light variant, the app
+   * follows the product: one dark surface everywhere.
+   *
+   * Three levels, because two is not enough to separate a page from a card from
+   * a card header, and four is more than anything here needs.
+   */
+  --color-surface: #070b09;
+  --color-panel: #0d1512;
+  --color-raised: #101915;
+  --color-edge: #18241e;
+  --color-edge-strong: #1e2b25;
+  --color-faint: #4e6459;
+
+  /*
+   * Keyframes cannot be expressed as utilities, so the two the hero needs are
+   * registered here and used as `animate-radar-sweep` / `animate-blip`.
+   */
+  --animate-radar-sweep: radar-sweep 3.2s linear infinite;
+  --animate-blip: blip 1.6s ease-in-out infinite;
+
+  /*
+   * Entrances, for things that appear where nothing was.
+   *
+   * All three animate only `opacity` and `transform`, which the compositor can
+   * run without touching layout or the main thread. Anything animating height,
+   * width or top would reflow the page on every frame.
+   *
+   * Durations are short on purpose: this is meant to explain where an element
+   * came from, not to be noticed. Past about 250ms an interface stops feeling
+   * smooth and starts feeling slow.
+   *
+   * The `prefers-reduced-motion` block further down collapses all of them, so
+   * no caller needs `motion-reduce:` for these.
+   */
+  --animate-fade-in: fade-in 160ms ease-out;
+  --animate-rise-in: rise-in 180ms ease-out;
+  --animate-slide-in-right: slide-in-right 220ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@keyframes fade-in {
+  from {
+    opacity: 0;
   }
 }
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes radar-sweep {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes blip {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-mint) 50%, transparent);
+  }
+  50% {
+    opacity: 0.4;
+    box-shadow: 0 0 0 7px transparent;
+  }
+}
+
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Was hardcoded to Arial, which quietly beat the font variables the layout
+     was loading — the app has never rendered in the font it was configured with. */
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/*
+ * Someone who has asked their system to stop moving things should get stillness
+ * rather than a slower version of the same motion.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
