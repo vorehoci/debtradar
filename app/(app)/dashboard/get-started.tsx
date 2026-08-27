@@ -1,4 +1,5 @@
 import { appInstallUrl } from "@/lib/github"
+import { SeedButton } from "./seed-button"
 
 /**
  * The affirmative control, matching the landing page.
@@ -96,8 +97,16 @@ function Reason({ children }: { children: React.ReactNode }) {
  *
  * Installing queues a full scan of every selected repository, so the ordinary
  * cause is that the scan is still running rather than anything the reader has
- * to do. This offers no button, because there is no action that would help —
- * only the two cases where waiting will not fix it.
+ * to do — which is why waiting is what this panel leads with.
+ *
+ * It did not used to offer anything else, on the reasoning that no action would
+ * help. That was wrong in the one case that matters. Seeding is triggered by
+ * `installation.created`, which GitHub fires exactly once and never replays, so
+ * an account that misses it — app cold at the wrong moment, a deploy mid-flight,
+ * GitHub exhausting its retries — is stuck here permanently, being told to wait
+ * for something that is never coming. The button is the way out, and it is
+ * below the explanation rather than above it because pressing it is the rarer
+ * case.
  */
 function AwaitingFirstScan() {
   return (
@@ -110,8 +119,9 @@ function AwaitingFirstScan() {
 
       <ul className="mt-5 space-y-2.5 text-sm text-muted">
         <Reason>
-          If this has not changed after several minutes, check that the repositories you expected
-          are actually selected in the installation — a partial install is easy to miss.
+          If this has not changed after several minutes, nothing is running — start it yourself with
+          the button below. It asks GitHub which repositories your installation can see and queues
+          each one.
         </Reason>
         <Reason>
           A repository with no <code className="font-mono text-xs">TODO</code> or{" "}
@@ -119,6 +129,8 @@ function AwaitingFirstScan() {
           debt is found by the Claude scan, which runs from the repository page.
         </Reason>
       </ul>
+
+      <SeedButton />
 
       <a
         href="https://github.com/settings/installations"
