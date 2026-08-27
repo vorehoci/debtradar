@@ -50,6 +50,22 @@ export const repositories = pgTable("repositories", {
    * that is never coming.
    */
   deepScanSha: text("deep_scan_sha"),
+
+  /**
+   * The default-branch commit the last regular scan read, and when.
+   *
+   * Derived from the todos table before this existed, which was wrong in the
+   * case that matters: a scan finding nothing new touches no todo row, so a
+   * repository scanned an hour ago looked identical to one last scanned in
+   * March. A repository with no TODOs at all had no evidence it had ever been
+   * scanned.
+   *
+   * Only default-branch scans write here. Pull request scans deliberately do
+   * not — they read a branch nobody is asking about on this page, and recording
+   * one would report the repository as fresher than it is.
+   */
+  lastScanSha: text("last_scan_sha"),
+  lastScanAt: timestamp("last_scan_at", { withTimezone: true }),
 })
 
 export const todos = pgTable(

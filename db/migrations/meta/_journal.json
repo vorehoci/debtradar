@@ -71,6 +71,13 @@
       "when": 1787820401952,
       "tag": "0009_swift_satana",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787841390893,
+      "tag": "0010_fluffy_ink",
+      "breakpoints": true
     }
   ]
 }

@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { auth } from "@/auth"
@@ -6,6 +7,7 @@ import { getRepository } from "@/db/repository"
 import { accessibleInstallationIds, GitHubAuthError } from "@/lib/access"
 import { describeRepo, duration } from "@/lib/describe"
 import { formatDate } from "@/lib/format"
+import { scanFreshness, type ScannedRepository } from "@/lib/freshness"
 import { BandChart } from "./band-chart"
 import { DeepScanButton } from "./deep-scan-button"
 
@@ -18,6 +20,68 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
       <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
       {hint ? <p className="mt-0.5 text-[11px] text-faint">{hint}</p> : null}
     </div>
+  )
+}
+
+/**
+ * How far the default branch has moved since the last regular scan.
+ *
+ * Its own component behind Suspense because it makes a GitHub call, and the
+ * rest of this page is already in memory. Holding the headline, the counts and
+ * the chart behind a network round trip to answer a question nobody has asked
+ * yet would be a bad trade — this line arrives a moment later, in place.
+ */
+async function ScanFreshness({ repo }: { repo: ScannedRepository }) {
+  const freshness = await scanFreshness(repo)
+
+  if (freshness.state === "never") {
+    return <Line tone="quiet">No scan recorded yet for {repo.defaultBranch}.</Line>
+  }
+
+  const scanned = `scanned ${formatDate(freshness.at ?? new Date())}`
+
+  if (freshness.state === "current") {
+    return (
+      <Line tone="quiet">
+        Up to date with {repo.defaultBranch} — {scanned}.
+      </Line>
+    )
+  }
+
+  if (freshness.state === "behind") {
+    return (
+      <Line tone="warn">
+        {freshness.commits} {freshness.commits === 1 ? "commit" : "commits"} behind{" "}
+        {repo.defaultBranch} — {scanned}. A push normally closes this on its own.
+      </Line>
+    )
+  }
+
+  if (freshness.state === "rewritten") {
+    return (
+      <Line tone="warn">
+        The commit last scanned is no longer on {repo.defaultBranch} — a force push or a rebase
+        since {scanned}.
+      </Line>
+    )
+  }
+
+  // Never reported as up to date: saying so because GitHub timed out is the one
+  // mistake this line exists to prevent.
+  return <Line tone="quiet">Could not reach GitHub to check freshness — {scanned}.</Line>
+}
+
+/**
+ * Two tones, not three. Being up to date and being unable to check both warrant
+ * the same quiet grey — neither asks anything of the reader — and only drift
+ * earns colour. An earlier version separated "ok" from "muted" and then gave
+ * them the same class, which is a distinction that exists only in the types.
+ */
+function Line({ tone, children }: { tone: "quiet" | "warn"; children: React.ReactNode }) {
+  return (
+    <p className={`mt-1.5 text-xs ${tone === "warn" ? "text-amber-500" : "text-faint"}`}>
+      {children}
+    </p>
   )
 }
 
@@ -53,6 +117,9 @@ export default async function RepoOverview({ params }: { params: Promise<{ id: s
           {repo.name}
         </h1>
         <p className="mt-1 text-sm text-muted">{describeRepo(counts)}</p>
+        <Suspense fallback={<p className="mt-1.5 text-xs text-faint">Checking freshness…</p>}>
+          <ScanFreshness repo={repo} />
+        </Suspense>
       </header>
 
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">

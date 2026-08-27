@@ -601,6 +601,14 @@ export async function recordScan(params: {
       })
   }
 
+  // Written on every default-branch scan, including one that found nothing —
+  // that is the case the old derived-from-todos answer got wrong, and the whole
+  // reason these columns exist.
+  await db
+    .update(repositories)
+    .set({ lastScanSha: params.sha, lastScanAt: now })
+    .where(eq(repositories.id, params.repositoryId))
+
   return { seen: byPrint.size, resolved }
 }
 
