@@ -265,3 +265,53 @@ export const rateLimits = pgTable("rate_limits", {
 export type Todo = typeof todos.$inferSelect
 export type NewTodo = typeof todos.$inferInsert
 export type TodoComment = typeof todoComments.$inferSelect
+
+/**
+ * What each model call cost, aggregated per operation.
+ *
+ * One row per (operation, model), written when the operation finishes — not one
+ * row per HTTP request. A deep scan of a large repository is five hundred
+ * requests, and five hundred rows of ten tokens each answer no question anybody
+ * asks; "what did scanning this repository cost" is the question, so that is the
+ * grain.
+ *
+ * Tokens are the record. `cost_usd` is a snapshot of what those tokens were
+ * worth at the moment they were spent, kept so a price change does not silently
+ * rewrite last month's numbers — but it is derived, and `lib/usage.ts` holds the
+ * rates it was derived from.
+ *
+ * `repository_id` and `installation_id` deliberately carry no foreign key. Cost
+ * history has to outlive the thing it was spent on: uninstalling the app or
+ * removing a repository must not delete the evidence of what it cost to serve.
+ */
+export const modelUsage = pgTable(
+  "model_usage",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Which code path spent this — `deep-scan`, `scan-push`, `analyse-fix`. */
+    operation: text("operation").notNull(),
+    repositoryId: bigint("repository_id", { mode: "number" }),
+    installationId: bigint("installation_id", { mode: "number" }),
+    model: text("model").notNull(),
+    /** API calls aggregated into this row. */
+    requests: integer("requests").notNull(),
+    inputTokens: integer("input_tokens").notNull(),
+    outputTokens: integer("output_tokens").notNull(),
+    cacheReadTokens: integer("cache_read_tokens").notNull(),
+    cacheWriteTokens: integer("cache_write_tokens").notNull(),
+    /** Null when the model is not in the price table — tokens are still recorded. */
+    costUsd: real("cost_usd"),
+    durationMs: integer("duration_ms").notNull(),
+    /**
+     * Size of the work, so cost per unit is computable rather than guessed.
+     * Both are null where the operation has no meaningful count of them.
+     */
+    commentsJudged: integer("comments_judged"),
+    linesScanned: integer("lines_scanned"),
+  },
+  (table) => [index("model_usage_repository").on(table.repositoryId, table.createdAt)],
+)
+
+export type ModelUsage = typeof modelUsage.$inferSelect
+export type NewModelUsage = typeof modelUsage.$inferInsert

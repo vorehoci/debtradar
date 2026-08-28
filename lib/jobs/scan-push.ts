@@ -3,6 +3,7 @@ import { classifyUnmarked } from "@/lib/classify"
 import { installationClient } from "@/lib/github"
 import { enrichRequested, inngest, pushReceived } from "@/lib/inngest"
 import { scanFiles, scanFilesRemoved } from "@/lib/todos"
+import { recordScale, trackUsage } from "@/lib/usage"
 
 export const scanPush = inngest.createFunction(
   {
@@ -40,7 +41,10 @@ export const scanPush = inngest.createFunction(
     // Unlike the PR path, this result is durable and ranked, so it earns the
     // cost of the classifier.
     const verdicts = await step.run("classify-unmarked", () =>
-      classifyUnmarked(unmarked, files),
+      trackUsage({ operation: "scan-push", repositoryId, installationId }, () => {
+        recordScale({ commentsJudged: unmarked.length })
+        return classifyUnmarked(unmarked, files)
+      }),
     )
 
     const found: FoundTodo[] = [

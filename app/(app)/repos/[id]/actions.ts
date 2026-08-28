@@ -18,6 +18,7 @@ import { accessibleInstallationIds } from "@/lib/access"
 import { type Band, parseBand } from "@/lib/describe"
 import { PAGE_SIZE } from "@/lib/paging"
 import { analyseFix, fetchFile } from "@/lib/fix-analysis"
+import { recordScale, trackUsage } from "@/lib/usage"
 import { installationClient } from "@/lib/github"
 import { deepScanRequested, inngest } from "@/lib/inngest"
 import { consume } from "@/db/rate-limit"
@@ -132,11 +133,21 @@ export async function analyseTodo(todoId: string): Promise<FixAnalysisResult> {
 
   if (source === null) return { state: "unreadable" }
 
-  const analysis = await analyseFix({
-    comment: todo.text,
-    marker: todo.marker,
-    context: { path: todo.filePath, line: todo.line, source },
-  })
+  const analysis = await trackUsage(
+    {
+      operation: "analyse-fix",
+      repositoryId: todo.repositoryId,
+      installationId: todo.installationId,
+    },
+    () => {
+      recordScale({ commentsJudged: 1 })
+      return analyseFix({
+        comment: todo.text,
+        marker: todo.marker,
+        context: { path: todo.filePath, line: todo.line, source },
+      })
+    },
+  )
 
   await saveFixAnalysis({
     todoId,

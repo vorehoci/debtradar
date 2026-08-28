@@ -14,7 +14,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "db:inspect": "node --env-file=.env.local scripts/db-inspect.mjs"
+    "db:inspect": "node --env-file=.env.local scripts/db-inspect.mjs",
+    "db:costs": "node --env-file=.env.local scripts/costs.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",

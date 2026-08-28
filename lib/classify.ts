@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk"
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod"
 import { untrusted } from "./prompt"
+import { recordUsage } from "./usage"
 import { z } from "zod"
 import type { CommentCandidate } from "./todos"
 
@@ -25,6 +26,9 @@ export type Verdict = z.infer<typeof VerdictSchema>
 
 /** Verdicts below this are treated as noise and dropped. */
 export const CONFIDENCE_FLOOR = 0.6
+
+/** Named so the usage ledger and the request cannot drift onto different models. */
+const PR_MODEL = "claude-opus-5"
 
 const SYSTEM = `You review pull request diffs for unfinished work.
 
@@ -165,6 +169,8 @@ the batch qualifies, which is usual.`,
       messages: [{ role: "user", content: untrusted("comments", list) }],
     })
 
+    recordUsage(model, response.usage)
+
     const parsed = response.parsed_output
     if (!parsed) return []
 
@@ -207,7 +213,7 @@ export async function classifyUnmarked(
   const client = new Anthropic()
 
   const response = await client.messages.parse({
-    model: "claude-opus-5",
+    model: PR_MODEL,
     max_tokens: 4096,
     system: SYSTEM,
     // Classification is shallow work; `low` keeps latency and cost down.
@@ -217,6 +223,8 @@ export async function classifyUnmarked(
     },
     messages: [{ role: "user", content: buildPrompt(candidates, patches) }],
   })
+
+  recordUsage(PR_MODEL, response.usage)
 
   const parsed = response.parsed_output
   if (!parsed) throw new Error("Classifier returned no parseable output")

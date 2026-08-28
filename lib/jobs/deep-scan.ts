@@ -11,6 +11,7 @@ import { classifyRepoComments } from "@/lib/classify"
 import { installationClient } from "@/lib/github"
 import { deepScanRequested, enrichRequested, inngest } from "@/lib/inngest"
 import { eachSourceFile } from "@/lib/tarball"
+import { recordScale, trackUsage } from "@/lib/usage"
 import { type CommentCandidate, scanSource } from "@/lib/todos"
 
 /**
@@ -49,6 +50,13 @@ const CHUNK_SIZE = 400
  */
 const MAX_COMMENTS = 20_000
 
+/** Lines in a file, for the cost-per-line figure the ledger is built to answer. */
+function countLines(source: string): number {
+  let lines = 1
+  for (let i = 0; i < source.length; i++) if (source.charCodeAt(i) === 10) lines++
+  return lines
+}
+
 export const deepScanRepository = inngest.createFunction(
   {
     id: "deep-scan-repository",
@@ -80,7 +88,7 @@ export const deepScanRepository = inngest.createFunction(
      * `deep_scan_candidates` until the run ends — see the table's comment for
      * why the array cannot travel between steps.
      */
-    const total = await step.run("collect-unmarked", async () => {
+    const walk = await step.run("collect-unmarked", async () => {
       // Before staging, not after: the candidates carry a foreign key to the
       // repository row, and on a first-ever deep scan that row may not exist.
       await ensureRepository({
@@ -94,8 +102,12 @@ export const deepScanRepository = inngest.createFunction(
 
       const octokit = await installationClient(installationId)
       const collected: CommentCandidate[] = []
+      let lines = 0
 
       await eachSourceFile(octokit, { owner, repo, ref: headSha }, ({ path, source }) => {
+        // Counted before the cap so the figure describes the repository rather
+        // than the point the walk stopped caring.
+        lines += countLines(source)
         if (collected.length >= MAX_COMMENTS) return
         for (const comment of scanSource(path, source)) {
           // Marked TODOs are already in the database from the regular scan.
@@ -105,8 +117,15 @@ export const deepScanRepository = inngest.createFunction(
         }
       })
 
-      return await stageDeepScanCandidates({ repositoryId, sha: headSha, candidates: collected })
+      const staged = await stageDeepScanCandidates({
+        repositoryId,
+        sha: headSha,
+        candidates: collected,
+      })
+      return { total: staged, lines }
     })
+
+    const total = walk.total
 
     /**
      * Classify and persist one chunk at a time.
@@ -126,32 +145,45 @@ export const deepScanRepository = inngest.createFunction(
     let found = 0
 
     for (let start = 0; start < total; start += CHUNK_SIZE) {
-      const part = await step.run(`classify-${start / CHUNK_SIZE}`, async () => {
-        const chunk = await deepScanCandidateSlice({
-          repositoryId,
-          sha: headSha,
-          start,
-          limit: CHUNK_SIZE,
-        })
+      const part = await step.run(`classify-${start / CHUNK_SIZE}`, () =>
+        // One ledger row per chunk rather than per run: a step is the unit that
+        // either completes or is retried, and a retried chunk that recorded its
+        // spend under the run would double-count it.
+        trackUsage({ operation: "deep-scan", repositoryId, installationId }, async () => {
+          const chunk = await deepScanCandidateSlice({
+            repositoryId,
+            sha: headSha,
+            start,
+            limit: CHUNK_SIZE,
+          })
 
-        const verdicts = await classifyRepoComments(chunk)
-        const hits: FoundTodo[] = verdicts.map((verdict) => ({
-          ...chunk[verdict.index],
-          category: verdict.category,
-          confidence: verdict.confidence,
-        }))
+          // The lines belong to the whole walk, so they are attributed to the
+          // first chunk only — summing them across chunks would multiply one
+          // repository's size by the number of steps it took to judge it.
+          recordScale({
+            commentsJudged: chunk.length,
+            linesScanned: start === 0 ? walk.lines : null,
+          })
 
-        // No `removed`: a deep scan adds what the regex missed, and must never
-        // resolve rows it simply did not look at.
-        const persisted = await recordScan({
-          repositoryId,
-          sha: headSha,
-          found: hits,
-          removed: [],
-        })
+          const verdicts = await classifyRepoComments(chunk)
+          const hits: FoundTodo[] = verdicts.map((verdict) => ({
+            ...chunk[verdict.index],
+            category: verdict.category,
+            confidence: verdict.confidence,
+          }))
 
-        return { ...persisted, judged: chunk.length }
-      })
+          // No `removed`: a deep scan adds what the regex missed, and must never
+          // resolve rows it simply did not look at.
+          const persisted = await recordScan({
+            repositoryId,
+            sha: headSha,
+            found: hits,
+            removed: [],
+          })
+
+          return { ...persisted, judged: chunk.length }
+        }),
+      )
 
       judged += part.judged
       // `seen` is what recordScan upserted, which for a deep scan is exactly the

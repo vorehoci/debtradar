@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk"
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod"
 import { untrusted } from "./prompt"
+import { recordUsage } from "./usage"
 import type { Octokit } from "octokit"
 import { z } from "zod"
 
@@ -25,6 +26,9 @@ export type FixAnalysis = z.infer<typeof AnalysisSchema>
  * stays a few thousand tokens rather than a whole large file.
  */
 const CONTEXT_LINES = 60
+
+/** Named so the usage ledger and the request cannot drift onto different models. */
+const MODEL = "claude-opus-5"
 
 /** Files past this are generated or vendored, and not worth reasoning about. */
 const MAX_FILE_BYTES = 400_000
@@ -101,7 +105,7 @@ export async function analyseFix(params: {
   ].join("\n")
 
   const response = await client.messages.parse({
-    model: "claude-opus-5",
+    model: MODEL,
     max_tokens: 2048,
     system: SYSTEM,
     // Judging fixability needs real reading of the surrounding code, so this
@@ -109,6 +113,8 @@ export async function analyseFix(params: {
     output_config: { effort: "medium", format: zodOutputFormat(AnalysisSchema) },
     messages: [{ role: "user", content: prompt }],
   })
+
+  recordUsage(MODEL, response.usage)
 
   const parsed = response.parsed_output
   if (!parsed) throw new Error("Fix analysis returned no parseable output")
