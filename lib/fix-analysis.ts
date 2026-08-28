@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk"
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod"
+import { untrusted } from "./prompt"
 import type { Octokit } from "octokit"
 import { z } from "zod"
 
@@ -11,9 +12,7 @@ const AnalysisSchema = z.object({
     .boolean()
     .describe("True only if a competent developer could act on this without new information"),
   scope: z.enum(FIX_SCOPES).describe("How far the change would reach"),
-  summary: z
-    .string()
-    .describe("One or two sentences describing the change in prose. No code."),
+  summary: z.string().describe("One or two sentences describing the change in prose. No code."),
   confidence: z.number().min(0).max(1),
 })
 
@@ -89,14 +88,16 @@ export async function analyseFix(params: {
 }): Promise<FixAnalysis> {
   const client = new Anthropic()
 
+  // Every part of this is somebody else's repository — the comment body, the
+  // surrounding source, and the path, which is as author-chosen as the rest.
   const prompt = [
-    `<comment marker="${params.marker ?? "none"}" file="${params.context.path}" line="${params.context.line}">`,
-    params.comment,
-    "</comment>",
+    untrusted("comment", params.comment, {
+      marker: params.marker,
+      file: params.context.path,
+      line: params.context.line,
+    }),
     "",
-    `<code path="${params.context.path}">`,
-    contextWindow(params.context),
-    "</code>",
+    untrusted("code", contextWindow(params.context), { path: params.context.path }),
   ].join("\n")
 
   const response = await client.messages.parse({

@@ -23,9 +23,60 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 })
 
+const DESCRIPTION =
+  "Every repository has hundreds of TODOs. debtradar scores each one on how long it has sat " +
+  "there, how hot the file around it runs, and whether the person who wrote it still works " +
+  "here — so you triage the four that matter."
+
 export const metadata: Metadata = {
-  title: "debtradar",
-  description: "TODOs ranked by how much they are likely to hurt.",
+  /**
+   * Required for the rest of this object to work.
+   *
+   * Open Graph tags must carry absolute URLs — a crawler has no page to resolve
+   * a relative one against. Without this, Next warns at build time and emits
+   * localhost, which is invisible locally and produces a broken preview card
+   * for everyone else.
+   */
+  metadataBase: new URL("https://debtradar.io"),
+
+  title: {
+    default: "debtradar",
+    // Signed-in pages set their own titles; this is what frames them.
+    template: "%s · debtradar",
+  },
+  description: DESCRIPTION,
+  applicationName: "debtradar",
+
+  openGraph: {
+    type: "website",
+    siteName: "debtradar",
+    title: "debtradar — find the TODO that hurts",
+    description: DESCRIPTION,
+    url: "/",
+    locale: "en",
+    // og:image comes from app/opengraph-image.png by file convention. Do not
+    // add an `images` key here — it is silently ignored, the convention wins.
+    //
+    // og:image:alt is not emitted by this version of Next: neither the
+    // documented .alt.txt sibling nor an explicit declaration produces the tag.
+    // Both were tried and removed rather than left in place doing nothing.
+  },
+
+  twitter: {
+    // X reads twitter:image when present and falls back to og:image otherwise,
+    // so one card image serves every platform.
+    card: "summary_large_image",
+    title: "debtradar — find the TODO that hurts",
+    description: DESCRIPTION,
+  },
+
+  // Only the landing page is meant to be indexed; app/robots.ts keeps crawlers
+  // off the rest. This says what to do with the page they are allowed to read.
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large" },
+  },
 }
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

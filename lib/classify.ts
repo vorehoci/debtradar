@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk"
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod"
+import { untrusted } from "./prompt"
 import { z } from "zod"
 import type { CommentCandidate } from "./todos"
 
@@ -40,11 +41,11 @@ verdict per numbered comment, and be strict: over-reporting makes the backlog
 useless.`
 
 function buildPrompt(candidates: CommentCandidate[], patches: string): string {
-  const list = candidates
-    .map((c, i) => `${i}. ${c.file}:${c.line} — ${c.text}`)
-    .join("\n")
+  const list = candidates.map((c, i) => `${i}. ${c.file}:${c.line} — ${c.text}`).join("\n")
 
-  return `<diff>\n${patches}\n</diff>\n\n<comments>\n${list}\n</comments>`
+  // Both blocks are repository content. See lib/prompt.ts for why the tag
+  // names carry a nonce rather than being written out plainly.
+  return `${untrusted("diff", patches)}\n\n${untrusted("comments", list)}`
 }
 
 /**
@@ -123,9 +124,7 @@ export async function classifyRepoComments(
 
   const classifyBatch = async (offset: number): Promise<RepoFinding[]> => {
     const batch = candidates.slice(offset, offset + REPO_BATCH)
-    const list = batch
-      .map((c, i) => `${i}. ${c.file}:${c.line} — ${c.text}`)
-      .join("\n")
+    const list = batch.map((c, i) => `${i}. ${c.file}:${c.line} — ${c.text}`).join("\n")
 
     const response = await client.messages.parse({
       // Haiku for bulk triage: this is wording-only judgement over thousands of
@@ -163,18 +162,20 @@ comment entirely — do not return an entry saying a comment is not a TODO, and 
 not explain your reasoning. An empty list is the correct answer when nothing in
 the batch qualifies, which is usual.`,
       output_config: { format: zodOutputFormat(FindingsSchema) },
-      messages: [{ role: "user", content: `<comments>\n${list}\n</comments>` }],
+      messages: [{ role: "user", content: untrusted("comments", list) }],
     })
 
     const parsed = response.parsed_output
     if (!parsed) return []
 
-    return parsed.findings
-      .filter((finding) => batch[finding.index] !== undefined)
-      .filter((finding) => finding.category !== "not-actionable")
-      .filter((finding) => finding.confidence >= floor)
-      // Re-index onto the full list so callers can map findings back.
-      .map((finding) => ({ ...finding, index: offset + finding.index }))
+    return (
+      parsed.findings
+        .filter((finding) => batch[finding.index] !== undefined)
+        .filter((finding) => finding.category !== "not-actionable")
+        .filter((finding) => finding.confidence >= floor)
+        // Re-index onto the full list so callers can map findings back.
+        .map((finding) => ({ ...finding, index: offset + finding.index }))
+    )
   }
 
   const found: RepoFinding[] = []

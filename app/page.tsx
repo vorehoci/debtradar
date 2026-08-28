@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { currentRepositories } from "@/lib/session-repos"
 import { Brand } from "./brand"
@@ -13,6 +14,17 @@ import { Stats } from "./_landing/stats"
 import { SignInButton } from "./_landing/sign-in"
 
 export const dynamic = "force-dynamic"
+
+/**
+ * Canonical lives here rather than in the root layout.
+ *
+ * A layout-level canonical applies to every page under it, so it would tell
+ * Google that /dashboard and /repos/123 are all copies of the home page. This
+ * is the only indexable route, so it is the only one that needs the tag.
+ */
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+}
 
 /** Shared by the nav pill and the header link, so both do the same thing. */
 const PILL =
