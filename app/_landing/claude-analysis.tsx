@@ -70,8 +70,9 @@ function SparkleIcon() {
 export function ClaudeAnalysis() {
   return (
     <section
+      id="claude-analysis"
       aria-label="Claude analysis"
-      className="flex w-full flex-col items-center px-5 py-[60px] font-mono lg:px-[clamp(20px,4vw,56px)] lg:pt-0 lg:pb-[90px]"
+      className="scroll-mt-20 flex w-full flex-col items-center px-5 py-[60px] font-mono lg:px-[clamp(20px,4vw,56px)] lg:pt-0 lg:pb-[90px]"
     >
       {/* The panel is only a panel above `lg:`. Below it the fill, border and
           radius come off and this is just the column the two children stack in,

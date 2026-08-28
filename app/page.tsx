@@ -95,7 +95,7 @@ export default async function Landing() {
               left points somewhere real.
             */}
               <a
-                href="https://github.com/marketplace"
+                href="https://github.com/apps/debtradar"
                 target="_blank"
                 rel="noreferrer"
                 className="pointer-events-auto transition-colors hover:text-ink max-md:hidden"

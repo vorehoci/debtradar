@@ -56,8 +56,9 @@ const STEPS: Step[] = [
 export function HowItWorks() {
   return (
     <section
+      id="how-it-works"
       aria-label="How it works"
-      className="flex w-full flex-col items-center gap-7 px-5 py-[60px] lg:gap-10 lg:px-[clamp(20px,4vw,56px)] lg:pt-5 lg:pb-[90px]"
+      className="scroll-mt-20 flex w-full flex-col items-center gap-7 px-5 py-[60px] lg:gap-10 lg:px-[clamp(20px,4vw,56px)] lg:pt-5 lg:pb-[90px]"
     >
       <div className="flex w-full max-w-[1120px] flex-col gap-2.5 lg:gap-3">
         {/* Braced string: a bare `// PIPELINE` text node reads as a stray
