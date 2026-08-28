@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { JetBrains_Mono, Space_Grotesk } from "next/font/google"
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "./analytics"
 import "./globals.css"
 
 /**
@@ -36,7 +36,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col bg-surface text-ink">
         {children}
-        {/* Vercel Web Analytics, replacing Google Analytics.
+        {/* Wrapped locally rather than imported straight from the package:
+            the wrapper strips repository ids and search terms out of the URL
+            before it is sent. See app/analytics.tsx.
+
+            Vercel Web Analytics, replacing Google Analytics.
 
             Cookieless, so it needs no consent banner in the EU — which is the
             whole reason for the swap. It also costs nothing to keep honest:
