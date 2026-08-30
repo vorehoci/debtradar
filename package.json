@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently -k -n next,smee,inngest -c cyan,magenta,yellow \"npm:dev:next\" \"npm:dev:smee\" \"npm:dev:inngest\"",
+    "dev": "concurrently -n next,smee,inngest -c cyan,magenta,yellow \"npm:dev:next\" \"npm:dev:smee\" \"npm:dev:inngest\"",
     "dev:next": "next dev",
     "dev:smee": "node scripts/smee.mjs",
     "dev:inngest": "npx --yes inngest-cli@latest dev -u http://localhost:3000/api/inngest",
@@ -15,7 +15,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:inspect": "node --env-file=.env.local scripts/db-inspect.mjs",
-    "db:costs": "node --env-file=.env.local scripts/costs.mjs"
+    "db:costs": "node --env-file=.env.local scripts/costs.mjs",
+    "db:installs": "node --env-file=.env.local scripts/installs.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",

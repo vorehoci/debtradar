@@ -1,4 +1,5 @@
 import { appInstallUrl } from "@/lib/github"
+import { TrackClick } from "@/app/_landing/track-click"
 import { SeedButton } from "./seed-button"
 
 /**
@@ -56,7 +57,8 @@ export async function GetStarted({ installed }: { installed: boolean }) {
         </Step>
         <Step n={2} title="Select repositories">
           All repositories, or just a few. You can change the selection later on GitHub without
-          reinstalling.
+          reinstalling. Only repositories you administer are listed — to scan someone else&rsquo;s
+          project, fork it first and install on the fork.
         </Step>
         <Step n={3} title="Come back in a minute">
           Installing starts a full scan of every repository you selected, so there is nothing else
@@ -64,15 +66,17 @@ export async function GetStarted({ installed }: { installed: boolean }) {
         </Step>
       </ol>
 
-      <a
-        href={href}
-        // Opened in the same tab: this is a hand-off to GitHub that ends by
-        // sending the user back, not a reference they read alongside the app.
-        className={`mt-7 inline-flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-colors ${ACTION}`}
-      >
-        Install on GitHub
-        <span aria-hidden="true">→</span>
-      </a>
+      <TrackClick event="install-click" placement="get-started">
+        <a
+          href={href}
+          // Opened in the same tab: this is a hand-off to GitHub that ends by
+          // sending the user back, not a reference they read alongside the app.
+          className={`mt-7 inline-flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-colors ${ACTION}`}
+        >
+          Install on GitHub
+          <span aria-hidden="true">→</span>
+        </a>
+      </TrackClick>
 
       <p className="mt-4 text-xs text-faint">
         debtradar reads code and metadata. The only thing it writes is a neutral, non-blocking check
@@ -190,13 +194,15 @@ export async function AddRepositories() {
             Manage access ↗
           </a>
 
-          <a
-            href={href}
-            className={`inline-flex items-center gap-2 rounded-md px-3.5 py-2 text-sm font-medium transition-colors ${ACTION}`}
-          >
-            Install on GitHub
-            <span aria-hidden="true">→</span>
-          </a>
+          <TrackClick event="install-click" placement="add-repositories">
+            <a
+              href={href}
+              className={`inline-flex items-center gap-2 rounded-md px-3.5 py-2 text-sm font-medium transition-colors ${ACTION}`}
+            >
+              Install on GitHub
+              <span aria-hidden="true">→</span>
+            </a>
+          </TrackClick>
         </div>
       </div>
     </section>

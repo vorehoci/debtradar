@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { currentRepositories } from "@/lib/session-repos"
+import { TrackClick } from "./_landing/track-click"
 import { Brand } from "./brand"
 import { HotspotCount, ScanConsole } from "./_landing/scan-console"
 import { Backdrop } from "./_landing/scene"
@@ -106,14 +107,16 @@ export default async function Landing() {
               costs more trust than the link was ever going to earn. What is
               left points somewhere real.
             */}
-              <a
-                href="https://github.com/apps/debtradar"
-                target="_blank"
-                rel="noreferrer"
-                className="pointer-events-auto transition-colors hover:text-ink max-md:hidden"
-              >
-                GitHub App
-              </a>
+              <TrackClick event="cta" placement="nav-github-app">
+                <a
+                  href="https://github.com/apps/debtradar"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="pointer-events-auto transition-colors hover:text-ink max-md:hidden"
+                >
+                  GitHub App
+                </a>
+              </TrackClick>
 
               {signedIn ? (
                 <Link href="/dashboard" className={`pointer-events-auto ${PILL}`}>
@@ -166,9 +169,11 @@ export default async function Landing() {
                   Open your board
                 </Link>
               ) : (
-                <SignInButton className={`pointer-events-auto ${PRIMARY}`}>
-                  Scan your repo
-                </SignInButton>
+                <TrackClick event="cta" placement="hero-sign-in">
+                  <SignInButton className={`pointer-events-auto ${PRIMARY}`}>
+                    Scan your repo
+                  </SignInButton>
+                </TrackClick>
               )}
 
               {/* Shown only once there is a board to show: a second button leading

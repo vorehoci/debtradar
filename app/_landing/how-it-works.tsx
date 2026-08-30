@@ -37,7 +37,10 @@ const STEPS: Step[] = [
       <>
         Install the GitHub App on the repositories you pick. It reads code and metadata, and the
         only thing it writes back is a neutral check on your pull requests.{" "}
-        <span className="text-[#6c8579]">GitLab is planned.</span>
+        <span className="text-[#6c8579]">
+          Want to scan a project you do not own? Fork it and install on your fork — the ranking is
+          the same. GitLab is planned.
+        </span>
       </>
     ),
   },
