@@ -16,7 +16,8 @@
     "db:studio": "drizzle-kit studio",
     "db:inspect": "node --env-file=.env.local scripts/db-inspect.mjs",
     "db:costs": "node --env-file=.env.local scripts/costs.mjs",
-    "db:installs": "node --env-file=.env.local scripts/installs.mjs"
+    "db:installs": "node --env-file=.env.local scripts/installs.mjs",
+    "db:funnel": "node --env-file=.env.local scripts/funnel.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",

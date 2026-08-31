@@ -315,3 +315,38 @@ export const modelUsage = pgTable(
 
 export type ModelUsage = typeof modelUsage.$inferSelect
 export type NewModelUsage = typeof modelUsage.$inferInsert
+
+/**
+ * Clicks on the calls to action, recorded here rather than at an analytics
+ * provider.
+ *
+ * Vercel Web Analytics counts page views on every plan but drops custom events
+ * on Hobby, and custom events are exactly the part that matters: page views
+ * already say 159 people reached the landing page and 4 reached the dashboard,
+ * and cannot say whether the 155 who left had pressed anything. "Did not click"
+ * and "clicked, then abandoned GitHub's consent screen" are different failures
+ * with different fixes, and telling them apart is the whole reason this exists.
+ *
+ * First-party for two further reasons. It survives ad blockers, which a
+ * developer audience runs more than most. And it keeps the funnel out of a
+ * third party's hands, which is the same argument `lib/redact-url.ts` makes
+ * about repository ids.
+ *
+ * Deliberately anonymous: no session, no visitor id, no address. Aggregate
+ * counts are what answers the question, and anything finer would be a promise
+ * about visitors that the privacy policy does not make.
+ */
+export const funnelEvents = pgTable(
+  "funnel_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    /** What was pressed — `cta`, `install-click`. */
+    name: text("name").notNull(),
+    /** Which instance of it, so two buttons for one action stay distinguishable. */
+    placement: text("placement").notNull(),
+  },
+  (table) => [index("funnel_events_name").on(table.name, table.createdAt)],
+)
+
+export type FunnelEvent = typeof funnelEvents.$inferSelect

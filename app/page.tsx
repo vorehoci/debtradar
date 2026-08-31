@@ -176,13 +176,22 @@ export default async function Landing() {
                 </TrackClick>
               )}
 
-              {/* Shown only once there is a board to show: a second button leading
-                back to the same sign-in would be two doors into one room. */}
+              {/* The second slot used to be empty for signed-out visitors, on the
+                reasoning that a second button leading back to the same sign-in
+                would be two doors into one room. True while both doors were
+                sign-in; the demo is a different room, and it is the one the
+                visitor can enter without handing over anything first. */}
               {signedIn ? (
                 <Link href="/dashboard" className={`pointer-events-auto ${GHOST}`}>
                   View a live report →
                 </Link>
-              ) : null}
+              ) : (
+                <TrackClick event="cta" placement="hero-demo">
+                  <Link href="/demo" className={`pointer-events-auto ${GHOST}`}>
+                    See it on n8n →
+                  </Link>
+                </TrackClick>
+              )}
             </div>
 
             <div className="mt-9 flex gap-[30px] text-[12.5px] text-muted">

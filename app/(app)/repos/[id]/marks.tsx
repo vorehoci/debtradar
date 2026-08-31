@@ -1,6 +1,7 @@
 import type { RankedTodo } from "@/db/ranking"
 import { AnalysedMark } from "./analysed-mark"
 import { DismissedChip } from "./dismissed-chip"
+import { FoundMark } from "./found-mark"
 import { ManualMark } from "./manual-mark"
 
 /**
@@ -13,11 +14,16 @@ import { ManualMark } from "./manual-mark"
  * actually been dismissed.
  *
  * Score and comment count are deliberately not here: both layouts place those
- * differently, and only these three are the same fact in the same order.
+ * differently, and only these four are the same fact in the same order.
  */
 export function Marks({ todo }: { todo: RankedTodo }) {
   return (
     <>
+      {/* First in the cluster: how a finding was discovered is what it *is*,
+          where the rest record things done to it afterwards. `category` is set
+          only by the deep scan — see `sourceFilter` in db/ranking.ts, which
+          defines "found by Claude" as exactly this column being non-null. */}
+      {todo.category ? <FoundMark category={todo.category} /> : null}
       {todo.dismissedAt ? <DismissedChip reason="dismissed" by={todo.dismissedBy} /> : null}
       {todo.isValid === false ? <DismissedChip reason="not-a-todo" by={todo.validBy} /> : null}
       {todo.fixAnalyzedSha ? (

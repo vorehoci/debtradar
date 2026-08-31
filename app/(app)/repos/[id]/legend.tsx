@@ -1,5 +1,6 @@
 import { AnalysedMark } from "./analysed-mark"
 import { DismissedChip } from "./dismissed-chip"
+import { FoundMark } from "./found-mark"
 import { ManualMark } from "./manual-mark"
 
 function Row({ mark, children }: { mark: React.ReactNode; children: React.ReactNode }) {
@@ -30,6 +31,9 @@ export function Legend() {
           it down — the columns must not jump when this is toggled. Needs its
           own opaque surface and shadow now that it floats over content. */}
       <ul className="absolute top-full right-0 z-20 mt-2 flex w-[min(20rem,calc(100vw-2rem))] flex-col gap-1.5 rounded-lg border border-edge bg-panel p-3 text-left shadow-lg">
+        <Row mark={<FoundMark category="hidden-todo" />}>
+          Claude found this one — the comment carries no TODO or FIXME marker
+        </Row>
         <Row mark={<AnalysedMark fixable={true} stale={false} />}>
           Claude has assessed whether this is fixable — open the card for the verdict
         </Row>

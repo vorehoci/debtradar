@@ -27,6 +27,7 @@ import {
 } from "../actions"
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/adapter/element-adapter"
 import { useDraggableCard, useDropColumn } from "./use-drag"
+import { useReadOnly } from "./read-only"
 import { Marks } from "../marks"
 
 export type Repo = { owner: string; name: string; defaultBranch: string }
@@ -56,7 +57,8 @@ function Card({
   anyChecked: boolean
 }) {
   const filename = todo.filePath.split("/").pop() ?? todo.filePath
-  const { ref, dragging } = useDraggableCard(todo.id, todo.band)
+  const readOnly = useReadOnly()
+  const { ref, dragging } = useDraggableCard(todo.id, todo.band, !readOnly)
 
   return (
     <div ref={ref} className={`group relative ${dragging ? "opacity-40" : ""}`}>
@@ -65,6 +67,7 @@ function Card({
           Hidden until hover unless something is already selected, so the board
           stays clean while you are only reading it. */}
       <label
+        hidden={readOnly}
         className={`absolute top-2 right-2 z-10 flex h-5 w-5 cursor-pointer items-center justify-center rounded border bg-panel transition-opacity  ${
           checked
             ? "border-mint opacity-100"
@@ -508,6 +511,7 @@ export function Panel({
   onClose: () => void
 }) {
   const [pending, startTransition] = useTransition()
+  const readOnly = useReadOnly()
 
   return (
     <aside className="fixed inset-y-0 right-0 z-20 flex w-full max-w-sm animate-slide-in-right flex-col overflow-y-auto border-l border-edge bg-panel p-5 shadow-xl">
@@ -531,13 +535,15 @@ export function Panel({
 
       <p className="mt-4 text-xs text-subtle">{describeRisk(todo)}</p>
 
-      <CodeView todo={todo} />
+      {readOnly ? null : (
+        <>
+          <CodeView todo={todo} />
+          <HideRow todo={todo} onDone={onClose} />
+          <FixAnalysis todo={todo} />
+        </>
+      )}
 
-      <HideRow todo={todo} onDone={onClose} />
-
-      <FixAnalysis todo={todo} />
-
-      <label className="mt-6 block">
+      <label className={readOnly ? "hidden" : "mt-6 block"}>
         <span className="text-xs font-medium">Severity</span>
         <select
           value={todo.manualBand ?? "auto"}
@@ -562,7 +568,7 @@ export function Panel({
         </select>
       </label>
 
-      {todo.manualBand ? (
+      {todo.manualBand && !readOnly ? (
         <p className="mt-2 text-[11px] text-faint">
           Set by {todo.manualBandBy ?? "someone"}
           {todo.manualBandAt ? ` on ${formatDate(todo.manualBandAt)}` : ""}. Choose Automatic to
@@ -596,7 +602,7 @@ export function Panel({
         Open on GitHub ↗
       </a>
 
-      <Comments todoId={todo.id} comments={comments} />
+      {readOnly ? null : <Comments todoId={todo.id} comments={comments} />}
     </aside>
   )
 }
@@ -622,6 +628,7 @@ export function Board({
   includeDismissed: boolean
   orphaned: boolean
 }) {
+  const readOnly = useReadOnly()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [checked, setChecked] = useState<Set<string>>(new Set())
 
@@ -784,26 +791,28 @@ export function Board({
   // target carries the band it represents, so the move is read off the event.
   useEffect(
     () =>
-      monitorForElements({
-        onDrop({ source, location }) {
-          const target = location.current.dropTargets[0]
-          if (!target) return
+      readOnly
+        ? undefined
+        : monitorForElements({
+            onDrop({ source, location }) {
+              const target = location.current.dropTargets[0]
+              if (!target) return
 
-          const todoId = source.data.todoId as string
-          const toBand = target.data.band as Band
-          if (source.data.fromBand === toBand) return
+              const todoId = source.data.todoId as string
+              const toBand = target.data.band as Band
+              if (source.data.fromBand === toBand) return
 
-          // Dropped out of the page it was paged into: it belongs to another
-          // column now, and the server will place it there by score.
-          setExtra((current) => prune(current, new Set([todoId])))
+              // Dropped out of the page it was paged into: it belongs to another
+              // column now, and the server will place it there by score.
+              setExtra((current) => prune(current, new Set([todoId])))
 
-          startTransition(async () => {
-            apply({ type: "move", todoId, toBand })
-            await updateSeverity(todoId, toBand)
-          })
-        },
-      }),
-    [apply],
+              startTransition(async () => {
+                apply({ type: "move", todoId, toBand })
+                await updateSeverity(todoId, toBand)
+              })
+            },
+          }),
+    [apply, readOnly],
   )
 
   return (
@@ -868,7 +877,7 @@ export function Board({
             {/* Was a "+ 442 more" caption, which stated the problem and left it
                 there. The count stays in the label so the button also says how
                 much is behind it. */}
-            {total > todos.length ? (
+            {total > todos.length && !readOnly ? (
               <button
                 type="button"
                 disabled={loading.has(band)}
@@ -906,7 +915,8 @@ function Column({
   count: number
   children: React.ReactNode
 }) {
-  const { ref, over } = useDropColumn(band)
+  const readOnly = useReadOnly()
+  const { ref, over } = useDropColumn(band, !readOnly)
 
   return (
     <section

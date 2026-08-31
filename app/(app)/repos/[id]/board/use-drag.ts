@@ -14,11 +14,13 @@ import type { Band } from "@/lib/describe"
  * mount and returns its own cleanup — that is also why there is no React peer
  * dependency here to break at the next major version.
  */
-export function useDraggableCard(todoId: string, band: Band) {
+export function useDraggableCard(todoId: string, band: Band, enabled = true) {
   const ref = useRef<HTMLDivElement | null>(null)
   const [dragging, setDragging] = useState(false)
 
   useEffect(() => {
+    // A read-only board still renders cards; they simply do not pick up.
+    if (!enabled) return
     const element = ref.current
     if (!element) return
 
@@ -28,17 +30,18 @@ export function useDraggableCard(todoId: string, band: Band) {
       onDragStart: () => setDragging(true),
       onDrop: () => setDragging(false),
     })
-  }, [todoId, band])
+  }, [todoId, band, enabled])
 
   return { ref, dragging }
 }
 
 /** Marks a column as somewhere a card can be dropped. */
-export function useDropColumn(band: Band) {
+export function useDropColumn(band: Band, enabled = true) {
   const ref = useRef<HTMLElement | null>(null)
   const [over, setOver] = useState(false)
 
   useEffect(() => {
+    if (!enabled) return
     const element = ref.current
     if (!element) return
 
@@ -52,7 +55,7 @@ export function useDropColumn(band: Band) {
       onDragLeave: () => setOver(false),
       onDrop: () => setOver(false),
     })
-  }, [band])
+  }, [band, enabled])
 
   return { ref, over }
 }

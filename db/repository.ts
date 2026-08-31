@@ -699,3 +699,16 @@ export async function deepScanCandidateSlice(params: {
 export async function clearDeepScanCandidates(repositoryId: number): Promise<void> {
   await db.delete(deepScanCandidates).where(eq(deepScanCandidates.repositoryId, repositoryId))
 }
+
+/**
+ * One repository, with no installation scoping.
+ *
+ * Every other read here is scoped to the caller's installations, and that is
+ * the access check. This one has no caller — it serves the public demo — so the
+ * scoping is replaced by the constant in `lib/demo.ts`, and it is the caller's
+ * job to pass only that id. Named to make an unscoped read obvious in a diff.
+ */
+export async function unscopedRepository(id: number) {
+  const [row] = await db.select().from(repositories).where(eq(repositories.id, id)).limit(1)
+  return row ?? null
+}

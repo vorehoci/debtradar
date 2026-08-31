@@ -9,6 +9,7 @@ import { PAGE_SIZE } from "@/lib/paging"
 import type { TodoCommentRow } from "@/lib/todo-comments"
 import { Marks } from "../marks"
 import { Panel, type Repo } from "./board-client"
+import { useReadOnly } from "./read-only"
 
 /**
  * The list view: one collapsible group per severity, inside a single card.
@@ -251,6 +252,7 @@ export function TodoList({
   includeDismissed: boolean
   orphaned: boolean
 }) {
+  const readOnly = useReadOnly()
   const [open, setOpen] = useState<Set<Band>>(new Set())
   // Keyed `band:path` rather than by path alone: the same file can hold
   // findings in two bands, and those are two independent rows.
@@ -382,7 +384,7 @@ export function TodoList({
                       />
                     ))}
 
-                    {remaining > 0 ? (
+                    {remaining > 0 && !readOnly ? (
                       <button
                         type="button"
                         onClick={() => loadMore(group.band, group.todos.length)}
