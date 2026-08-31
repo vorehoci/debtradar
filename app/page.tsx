@@ -6,6 +6,7 @@ import { Brand } from "./brand"
 import { HotspotCount, ScanConsole } from "./_landing/scan-console"
 import { Backdrop } from "./_landing/scene"
 import { Capabilities } from "./_landing/capabilities"
+import { DemoCta } from "./_landing/demo-cta"
 import { ClaudeAnalysis } from "./_landing/claude-analysis"
 import { Divider } from "./_landing/divider"
 import { Footer } from "./_landing/footer"
@@ -186,11 +187,7 @@ export default async function Landing() {
                   View a live report →
                 </Link>
               ) : (
-                <TrackClick event="cta" placement="hero-demo">
-                  <Link href="/demo" className={`pointer-events-auto ${GHOST}`}>
-                    See it on n8n →
-                  </Link>
-                </TrackClick>
+                <DemoCta className={GHOST} />
               )}
             </div>
 
