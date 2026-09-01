@@ -4,13 +4,20 @@ import { DEMO_REPOSITORY_ID } from "@/lib/demo"
 import { TrackClick } from "./track-click"
 
 /**
- * The hero's second door: the product, visible without handing anything over.
+ * The hero's main call to action: the product, visible without handing anything
+ * over.
  *
  * Named with the real count rather than "see the demo". "Demo" labels the thing
  * as a marketing artefact, which a developer audience skips; a number is
  * concrete, invites curiosity, and proves the scan works before the click
  * instead of promising to. It reads the same figure the demo page's own
- * headline does, so the button cannot promise something the page then contradicts.
+ * headline does, so the button cannot promise something the page then
+ * contradicts.
+ *
+ * It carried a rotating radar sweep on its border while it was the secondary
+ * control, to stop it disappearing next to the primary. That is gone: the sweep
+ * was compensating for the hierarchy being wrong, and the hierarchy is now
+ * right. A mint sweep around a mint button would also have been invisible.
  */
 async function label(): Promise<string> {
   try {
@@ -26,41 +33,14 @@ async function label(): Promise<string> {
   return "See a real scan of n8n"
 }
 
-/**
- * A rotating conic sweep behind a one-pixel gap, so the border itself turns.
- *
- * `animate-radar-sweep` is the same keyframe the logo mark uses, which is the
- * point — the button reads as the same object as the brand rather than as a
- * button someone decorated. It animates `rotate` only, so it runs on the
- * compositor and never touches layout, and the global `prefers-reduced-motion`
- * rule in globals.css already stops it without this file asking.
- *
- * Kept deliberately dim. This is the *secondary* control, and an effect louder
- * than the primary call to action would invert the page's hierarchy while
- * pretending not to. If the demo should be the loud one, the honest fix is to
- * swap which button is primary.
- */
 export async function DemoCta({ className }: { className: string }) {
   const text = await label()
 
   return (
     <TrackClick event="cta" placement="hero-demo">
-      <span className="pointer-events-auto relative inline-block overflow-hidden rounded-[11px] p-px">
-        <span
-          aria-hidden="true"
-          // Square and wider than the button so the rotation sweeps its corners
-          // rather than orbiting a point inside it.
-          className="absolute top-1/2 left-1/2 aspect-square w-[140%] -translate-x-1/2 -translate-y-1/2 animate-radar-sweep bg-[conic-gradient(from_0deg,transparent_0deg,transparent_260deg,color-mix(in_srgb,var(--color-mint)_45%,transparent)_360deg)] opacity-60 motion-reduce:animate-none"
-        />
-        {/* The opaque middle. Without it the sweep shows through the whole
-            face rather than the edge: GHOST's own fill is `bg-white/[.04]`,
-            four percent of white, which hides nothing. Inset by the wrapper's
-            single pixel of padding, so what remains visible is a ring. */}
-        <span aria-hidden="true" className="absolute inset-px rounded-[10px] bg-[#0a1b22]" />
-        <Link href="/demo" className={`relative ${className}`}>
-          {text} →
-        </Link>
-      </span>
+      <Link href="/demo" className={`pointer-events-auto inline-block ${className}`}>
+        {text} →
+      </Link>
     </TrackClick>
   )
 }

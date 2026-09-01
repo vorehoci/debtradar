@@ -164,30 +164,37 @@ export default async function Landing() {
               that matter instead of four hundred issues.
             </p>
 
+            {/*
+              For a signed-out visitor the demo leads and signing in follows.
+              That is a reversal, and the measurement asked for it: of the first
+              seven presses recorded in `funnel_events`, six went to the demo
+              and one to sign-in. The old order asked a stranger who had arrived
+              from an advertisement thirty seconds earlier to hand over GitHub
+              access before being shown anything, and 148 paid clicks produced no
+              installs at all.
+
+              A signed-in visitor keeps the old order: they have a board, so
+              opening it is the thing they came for.
+            */}
             <div className="mt-8 flex flex-wrap gap-3.5">
               {signedIn ? (
                 <Link href="/dashboard" className={`pointer-events-auto inline-block ${PRIMARY}`}>
                   Open your board
                 </Link>
               ) : (
-                <TrackClick event="cta" placement="hero-sign-in">
-                  <SignInButton className={`pointer-events-auto ${PRIMARY}`}>
-                    Scan your repo
-                  </SignInButton>
-                </TrackClick>
+                <DemoCta className={PRIMARY} />
               )}
 
-              {/* The second slot used to be empty for signed-out visitors, on the
-                reasoning that a second button leading back to the same sign-in
-                would be two doors into one room. True while both doors were
-                sign-in; the demo is a different room, and it is the one the
-                visitor can enter without handing over anything first. */}
               {signedIn ? (
                 <Link href="/dashboard" className={`pointer-events-auto ${GHOST}`}>
                   View a live report →
                 </Link>
               ) : (
-                <DemoCta className={GHOST} />
+                <TrackClick event="cta" placement="hero-sign-in">
+                  <SignInButton className={`pointer-events-auto ${GHOST}`}>
+                    Scan your repo
+                  </SignInButton>
+                </TrackClick>
               )}
             </div>
 
