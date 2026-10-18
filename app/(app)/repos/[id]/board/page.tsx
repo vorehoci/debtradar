@@ -128,7 +128,7 @@ export default async function RepoBoard({
           width — and a long `owner/name` pushed the whole header off screen. */}
       <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight break-words">
+          <h1 className="text-[28px] font-semibold tracking-[-.03em] [font-stretch:80%] break-words">
             <span className="text-muted">{repo.owner}/</span>
             {repo.name}
           </h1>
@@ -148,9 +148,9 @@ export default async function RepoBoard({
                   dismissed: showDismissed,
                 })}
                 aria-pressed={source === "claude"}
-                className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
+                className={`rounded-[3px] border px-2.5 py-0.5 text-xs transition-colors ${
                   source === "claude"
-                    ? "border-violet-600 bg-violet-600 text-white"
+                    ? "border-lilac bg-lilac/25 text-ink"
                     : "border-edge-strong hover:border-edge-strong"
                 }`}
               >
@@ -158,7 +158,7 @@ export default async function RepoBoard({
               </Link>
             ) : null}
 
-            {/* Amber rather than violet: this chip selects on risk, where the
+            {/* Ember rather than lilac: this chip selects on risk, where the
                 Claude chip selects on provenance. Two filters in the same colour
                 would read as two halves of one control. */}
             {counts.orphaned > 0 || orphaned ? (
@@ -166,9 +166,9 @@ export default async function RepoBoard({
                 href={boardHref({ source, dismissed: showDismissed, orphaned: !orphaned })}
                 aria-pressed={orphaned}
                 title={`Author inactive for over ${ORPHAN_FILTER_DAYS} days`}
-                className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
+                className={`rounded-[3px] border px-2.5 py-0.5 text-xs transition-colors ${
                   orphaned
-                    ? "border-amber-600 bg-amber-600 text-white"
+                    ? "border-ember bg-ember/25 text-ink"
                     : "border-edge-strong hover:border-edge-strong"
                 }`}
               >

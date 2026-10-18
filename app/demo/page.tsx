@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { Arrow } from "@/app/_icons"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ORPHAN_FILTER_DAYS, rankedTodos, todoCounts } from "@/db/ranking"
@@ -34,9 +35,16 @@ export const metadata: Metadata = {
 
 const COLUMNS: Band[] = BANDS
 
+/**
+ * The same control the landing page uses, in the same vocabulary: a hairline
+ * rectangle that takes ember on hover, never a filled pill. Ember is the one
+ * incandescent accent in this world and it is spent on the active state and
+ * the primary action only.
+ */
 const ACTION =
-  "inline-flex items-center gap-2 rounded-md bg-mint px-4 py-2.5 text-sm font-medium " +
-  "text-surface transition-colors hover:bg-mint/90"
+  "inline-flex items-center gap-2.5 rounded-[3px] border border-lilac bg-lilac/[.18] " +
+  "px-5 py-3 text-[13px] uppercase tracking-[.16em] text-ink transition-colors " +
+  "hover:border-ember hover:text-ember"
 
 export default async function Demo() {
   // The id is a constant, never a parameter — see lib/demo.ts. This read is
@@ -82,21 +90,22 @@ export default async function Demo() {
     <main className="w-full px-4 py-6 sm:px-6 sm:py-10">
       <header className="mb-8">
         <div className="flex flex-wrap items-center gap-3">
-          <Link href="/" className="text-sm text-subtle underline-offset-4 hover:underline">
-            ← debtradar
+          <Link href="/" className="group inline-flex items-center gap-2 text-sm text-subtle hover:text-ink">
+            <Arrow className="size-3.5 rotate-180" />
+            debtradar
           </Link>
-          <span className="rounded-full border border-mint/25 bg-mint/[.08] px-2.5 py-0.5 text-[11px] font-semibold tracking-[.14em] text-mint">
+          <span className="rounded-[3px] border border-lilac/25 bg-lilac/[.08] px-2.5 py-0.5 text-[11px] font-semibold tracking-[.14em] text-lilac">
             LIVE DEMO · READ ONLY
           </span>
         </div>
 
-        <h1 className="mt-4 text-2xl font-semibold tracking-tight">
+        <h1 className="mt-4 text-[28px] font-semibold tracking-[-.03em] [font-stretch:80%]">
           {counts.open} TODOs in{" "}
           <a
             href={DEMO_UPSTREAM.url}
             target="_blank"
             rel="noreferrer"
-            className="underline decoration-edge-strong underline-offset-4 hover:decoration-mint"
+            className="underline decoration-edge-strong underline-offset-4 hover:decoration-lilac"
           >
             {DEMO_UPSTREAM.label}
           </a>
@@ -108,7 +117,7 @@ export default async function Demo() {
           {counts.byClaude > 0 ? (
             <>
               {" "}
-              <span className="text-violet-400">{counts.byClaude}</span> of these carry no{" "}
+              <span className="text-lilac">{counts.byClaude}</span> of these carry no{" "}
               <code className="font-mono text-xs">TODO</code> marker at all — Claude found them by
               reading the comments.
             </>
@@ -119,7 +128,7 @@ export default async function Demo() {
           <TrackClick event="cta" placement="demo-page">
             <Link href="/" className={ACTION}>
               Scan your own repository
-              <span aria-hidden="true">→</span>
+              <Arrow />
             </Link>
           </TrackClick>
           <Legend />
@@ -154,7 +163,7 @@ export default async function Demo() {
         <TrackClick event="cta" placement="demo-footer">
           <Link href="/" className={`mt-4 ${ACTION}`}>
             Run this on your own code
-            <span aria-hidden="true">→</span>
+            <Arrow />
           </Link>
         </TrackClick>
       </footer>

@@ -33,10 +33,10 @@ import { Marks } from "../marks"
 export type Repo = { owner: string; name: string; defaultBranch: string }
 
 const COLUMN_ACCENT: Record<Band, string> = {
-  critical: "bg-red-500",
-  high: "bg-amber-500",
-  moderate: "bg-[#6c8579]",
-  low: "bg-[#2e4a3c]",
+  critical: 'bg-band-critical',
+  high: 'bg-band-high',
+  moderate: 'bg-band-moderate',
+  low: 'bg-band-low',
 }
 
 function Card({
@@ -70,7 +70,7 @@ function Card({
         hidden={readOnly}
         className={`absolute top-2 right-2 z-10 flex h-5 w-5 cursor-pointer items-center justify-center rounded border bg-panel transition-opacity  ${
           checked
-            ? "border-mint opacity-100"
+            ? "border-lilac opacity-100"
             : `border-edge-strong  ${
                 anyChecked ? "opacity-100" : "opacity-0 group-hover:opacity-100"
               }`
@@ -100,13 +100,13 @@ function Card({
         aria-pressed={anyChecked ? checked : selected}
         // `active:` covers the press before a drag actually starts, so the hand
         // closes on mousedown rather than only once the card detaches.
-        className={`w-full rounded-lg border p-3 text-left transition-colors ${
+        className={`w-full rounded-[3px] border p-3 text-left transition-colors ${
           dragging ? "cursor-grabbing" : "cursor-pointer active:cursor-grabbing"
         } ${
           checked
-            ? "border-mint ring-1 ring-mint"
+            ? "border-lilac ring-1 ring-lilac"
             : selected
-              ? "border-mint"
+              ? "border-lilac"
               : "border-edge hover:border-edge-strong"
         } ${
           // Only visible when "show dismissed" is on, and then it must be obvious
@@ -213,11 +213,11 @@ function Comments({ todoId, comments }: { todoId: string; comments: TodoCommentR
           disabled={pending}
           className="w-full rounded border border-edge-strong bg-transparent p-2 text-xs disabled:opacity-50"
         />
-        {error ? <p className="mt-1 text-[11px] text-red-600">{error}</p> : null}
+        {error ? <p className="mt-1 text-[11px] text-band-critical">{error}</p> : null}
         <button
           type="submit"
           disabled={pending || body.trim().length === 0}
-          className="mt-1 rounded bg-mint px-3 py-1.5 text-xs font-medium text-surface disabled:opacity-40"
+          className="mt-1 rounded bg-lilac px-3 py-1.5 text-xs font-medium text-surface disabled:opacity-40"
         >
           {pending ? "Saving…" : "Comment"}
         </button>
@@ -262,8 +262,8 @@ function FixAnalysis({ todo }: { todo: RankedTodo }) {
         <div className="mb-3">
           <div className="flex items-center gap-2">
             <span
-              className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
-                todo.fixable ? "bg-violet-950 text-violet-300" : "bg-edge text-subtle"
+              className={`rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase ${
+                todo.fixable ? "bg-lilac/15 text-ink" : "bg-edge text-subtle"
               }`}
             >
               {todo.fixable ? "Actionable" : "Not actionable"}
@@ -279,7 +279,7 @@ function FixAnalysis({ todo }: { todo: RankedTodo }) {
           <p className="mt-2 text-xs text-subtle">{todo.fixSummary}</p>
 
           {stale ? (
-            <p className="mt-1 text-[11px] text-amber-500">
+            <p className="mt-1 text-[11px] text-ember">
               Judged against an older commit — the file has changed since.
             </p>
           ) : null}
@@ -291,7 +291,7 @@ function FixAnalysis({ todo }: { todo: RankedTodo }) {
           type="button"
           onClick={run}
           disabled={pending}
-          className="w-full rounded bg-violet-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-violet-700 disabled:opacity-50"
+          className="w-full rounded bg-lilac px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-lilac/80 disabled:opacity-50"
         >
           {pending ? "Analysing…" : stale ? "Re-analyse with Claude" : "Analyse with Claude"}
         </button>
@@ -299,7 +299,7 @@ function FixAnalysis({ todo }: { todo: RankedTodo }) {
         <p className="text-[11px] text-faint">Analysed against the current version of this file.</p>
       )}
 
-      {problem ? <p className="mt-1 text-[11px] text-red-600">{problem}</p> : null}
+      {problem ? <p className="mt-1 text-[11px] text-band-critical">{problem}</p> : null}
     </section>
   )
 }
@@ -470,7 +470,7 @@ function CodeView({ todo }: { todo: RankedTodo }) {
               const number = context.startLine + index
               const isTodo = number === todo.line
               return (
-                <div key={number} className={isTodo ? "-mx-3 bg-amber-950/40 px-3" : undefined}>
+                <div key={number} className={isTodo ? "-mx-3 bg-ember/[.12] px-3" : undefined}>
                   <span className="mr-3 inline-block w-8 text-right text-faint select-none">
                     {number}
                   </span>
@@ -822,7 +822,7 @@ export function Board({
           moving the next card out from under the cursor. */}
       {checked.size > 0 ? (
         <div className="fixed inset-x-0 bottom-0 z-30 flex justify-center px-4 pb-4">
-          <div className="flex items-center gap-4 rounded-full border border-edge-strong bg-panel px-4 py-2 shadow-lg">
+          <div className="flex items-center gap-4 rounded-[3px] border border-edge-strong bg-panel px-4 py-2 shadow-lg">
             <span className="text-xs tabular-nums text-subtle">{checked.size} selected</span>
             {/* Dismiss leads because it is the ordinary case. "Not TODOs" is the
                 rarer, higher-consequence one — it writes a training label — so it
@@ -830,7 +830,7 @@ export function Board({
             <button
               type="button"
               onClick={() => hideChecked("dismiss")}
-              className="cursor-pointer rounded bg-mint px-3 py-1 text-xs font-medium text-surface"
+              className="cursor-pointer rounded bg-lilac px-3 py-1 text-xs font-medium text-surface"
             >
               Dismiss
             </button>
@@ -838,7 +838,7 @@ export function Board({
               type="button"
               onClick={() => hideChecked("not-a-todo")}
               title="Record these as things debtradar should not have surfaced"
-              className="cursor-pointer rounded border border-edge-strong px-3 py-1 text-xs text-subtle transition-colors hover:border-amber-600 hover:text-amber-500"
+              className="cursor-pointer rounded border border-edge-strong px-3 py-1 text-xs text-subtle transition-colors hover:border-ember hover:text-ember"
             >
               Not TODOs
             </button>
@@ -857,7 +857,7 @@ export function Board({
         {view.map(({ band, total, todos }) => (
           <Column key={band} band={band} total={total} count={counts[band]}>
             {todos.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-edge-strong p-6 text-center text-xs text-faint">
+              <p className="rounded-[3px] border border-dashed border-edge-strong p-6 text-center text-xs text-faint">
                 Nothing here
               </p>
             ) : (
@@ -882,7 +882,7 @@ export function Board({
                 type="button"
                 disabled={loading.has(band)}
                 onClick={() => loadMore(band, todos.length)}
-                className="mt-1 cursor-pointer rounded-lg border border-dashed border-edge-strong py-2 text-[11px] text-muted transition-colors hover:border-edge-strong hover:text-ink disabled:cursor-default disabled:opacity-50"
+                className="mt-1 cursor-pointer rounded-[3px] border border-dashed border-edge-strong py-2 text-[11px] text-muted transition-colors hover:border-edge-strong hover:text-ink disabled:cursor-default disabled:opacity-50"
               >
                 {loading.has(band)
                   ? "Loading…"
@@ -921,13 +921,13 @@ function Column({
   return (
     <section
       ref={ref as React.RefObject<HTMLElement>}
-      className={`flex min-w-72 flex-1 flex-col rounded-lg p-1 transition-colors ${
+      className={`flex min-w-72 flex-1 flex-col rounded-[3px] p-1 transition-colors ${
         over ? "bg-raised" : ""
       }`}
     >
       <header className="mb-3 flex items-center gap-2 px-1">
         <span className={`h-2 w-2 rounded-full ${COLUMN_ACCENT[band]}`} />
-        <h2 className="text-sm font-medium capitalize">{band}</h2>
+        <h2 className="text-[12.5px] font-semibold uppercase tracking-[.18em]">{band}</h2>
         <span className="text-xs tabular-nums text-faint">{count}</span>
       </header>
 

@@ -29,10 +29,13 @@ import { useReadOnly } from "./read-only"
 
 /** The band's colours, matching the terminal card on the landing page. */
 const BAND_TONE: Record<Band, { dot: string; text: string }> = {
-  critical: { dot: "bg-signal", text: "text-signal" },
-  high: { dot: "bg-caution", text: "text-caution" },
-  moderate: { dot: "bg-[#6c8579]", text: "text-[#8aa396]" },
-  low: { dot: "bg-[#2e4a3c]", text: "text-[#6c8579]" },
+  // The dot carries the hue; the text stays readable. Only critical takes
+  // ember, which is the one accent this world spends sparingly — four coloured
+  // labels down a column would make none of them mean anything.
+  critical: { dot: 'bg-band-critical', text: 'text-band-critical' },
+  high: { dot: 'bg-band-high', text: 'text-subtle' },
+  moderate: { dot: 'bg-band-moderate', text: 'text-subtle' },
+  low: { dot: 'bg-band-low', text: 'text-muted' },
 }
 
 function Chevron({ open }: { open: boolean }) {
@@ -92,16 +95,16 @@ function Row({
     <button
       type="button"
       onClick={onSelect}
-      className="flex w-full animate-rise-in cursor-pointer items-center gap-3 border-t border-[#18241e] py-2.5 pr-4 pl-11 text-left transition-colors hover:bg-white/[.02]"
+      className="flex w-full animate-rise-in cursor-pointer items-center gap-3 border-t border-[#232745] py-2.5 pr-4 pl-11 text-left transition-colors hover:bg-white/[.02]"
     >
-      <span className="w-10 shrink-0 font-mono text-[11px] tabular-nums text-[#4e6459]">
+      <span className="w-10 shrink-0 font-mono text-[11px] tabular-nums text-[#727da3]">
         :{todo.line}
       </span>
 
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="truncate font-mono text-[13px] text-[#e8f2ec]">{todo.text}</span>
+        <span className="truncate font-mono text-[13px] text-[#dce6ff]">{todo.text}</span>
         {todo.authoredAt ? (
-          <span className="font-mono text-[11px] text-[#6c8579]">
+          <span className="font-mono text-[11px] text-[#7d8cb8]">
             {formatDate(todo.authoredAt)}
           </span>
         ) : null}
@@ -168,16 +171,16 @@ function FileRow({
         type="button"
         onClick={single ? () => onSelect(group.todos[0].id) : onToggle}
         aria-expanded={single ? undefined : open}
-        className="flex w-full cursor-pointer items-center gap-3 border-t border-[#18241e] px-4 py-3 text-left transition-colors hover:bg-white/[.02]"
+        className="flex w-full cursor-pointer items-center gap-3 border-t border-[#232745] px-4 py-3 text-left transition-colors hover:bg-white/[.02]"
       >
-        <span className="w-4 shrink-0 text-[#4e6459]">
+        <span className="w-4 shrink-0 text-[#727da3]">
           {single ? null : <Chevron open={open} />}
         </span>
 
-        <span className={`h-6 w-[3px] shrink-0 rounded-sm ${tone.dot}`} />
+        <span className={`h-6 w-[3px] shrink-0 rounded-[2px] ${tone.dot}`} />
 
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="truncate font-mono text-[13px] text-[#e8f2ec]">{group.path}</span>
+          <span className="truncate font-mono text-[13px] text-[#dce6ff]">{group.path}</span>
 
           {/*
             The three facts the score is built from, in descending order of how
@@ -188,7 +191,7 @@ function FileRow({
             They describe the worst finding, not an average of the file, because
             the score and the marks beside them already do.
           */}
-          <span className="truncate font-mono text-[11px] text-[#4e6459]">
+          <span className="truncate font-mono text-[11px] text-[#727da3]">
             {describeAge(worstTodo.authoredAt)}
             {" · "}
             {describeAuthor(worstTodo.authorLogin, worstTodo.authorLastActiveAt)}
@@ -198,7 +201,7 @@ function FileRow({
         </span>
 
         {single ? null : (
-          <span className="shrink-0 rounded border border-[#1e2b25] bg-[#070b09] px-1.5 py-0.5 font-mono text-[10px] tabular-nums text-[#6c8579]">
+          <span className="shrink-0 rounded border border-[#2e3357] bg-[#0b0d1a] px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-[#7d8cb8]">
             {group.todos.length}
           </span>
         )}
@@ -334,29 +337,29 @@ export function TodoList({
 
   return (
     <>
-      <div className="w-full max-w-[1120px] overflow-hidden rounded-[14px] border border-[#18241e] bg-[#0d1512] lg:border-[#1e2a24] lg:bg-[#0b120f] lg:shadow-[0_30px_80px_0_rgba(0,0,0,.6)]">
+      <div className="w-full max-w-[1120px] overflow-hidden rounded-[3px] border border-[#232745] bg-[#13162b] lg:border-[#232745] lg:bg-[#13162b] lg:shadow-[0_30px_80px_0_rgba(0,0,0,.6)]">
         {groups.map((group) => {
           const isOpen = open.has(group.band)
           const tone = BAND_TONE[group.band]
           const remaining = group.total - group.todos.length
 
           return (
-            <section key={group.band} className="border-b border-[#18241e] last:border-b-0">
+            <section key={group.band} className="border-b border-[#232745] last:border-b-0">
               <h2>
                 <button
                   type="button"
                   onClick={() => toggle(group.band)}
                   aria-expanded={isOpen}
-                  className="flex w-full cursor-pointer items-center gap-3 bg-[#101915] px-4 py-3 text-left transition-colors hover:bg-[#142019]"
+                  className="flex w-full cursor-pointer items-center gap-3 bg-[#1a1d3a] px-4 py-3 text-left transition-colors hover:bg-[#1a1d3a]"
                 >
-                  <span className="text-[#6c8579]">
+                  <span className="text-[#7d8cb8]">
                     <Chevron open={isOpen} />
                   </span>
-                  <span className={`size-2 shrink-0 rounded-sm ${tone.dot}`} />
-                  <span className="flex-1 font-mono text-[13px] text-[#e8f2ec] capitalize">
+                  <span className={`size-2 shrink-0 rounded-[2px] ${tone.dot}`} />
+                  <span className="flex-1 font-mono text-[13px] text-[#dce6ff] capitalize">
                     {group.band}
                   </span>
-                  <span className="font-mono text-xs tabular-nums text-[#6c8579]">
+                  <span className="font-mono text-xs tabular-nums text-[#7d8cb8]">
                     {group.total}
                   </span>
                 </button>
@@ -367,7 +370,7 @@ export function TodoList({
                   otherwise mount every row on first paint to show nothing. */}
               {isOpen ? (
                 group.total === 0 ? (
-                  <p className="px-4 py-6 text-center font-mono text-xs text-[#4e6459]">
+                  <p className="px-4 py-6 text-center font-mono text-xs text-[#727da3]">
                     Nothing in this band.
                   </p>
                 ) : (
@@ -389,7 +392,7 @@ export function TodoList({
                         type="button"
                         onClick={() => loadMore(group.band, group.todos.length)}
                         disabled={loading.has(group.band)}
-                        className="w-full cursor-pointer border-t border-[#18241e] px-4 py-3 font-mono text-xs text-[#6c8579] transition-colors hover:text-[#e8f2ec] disabled:opacity-50"
+                        className="w-full cursor-pointer border-t border-[#232745] px-4 py-3 font-mono text-xs text-[#7d8cb8] transition-colors hover:text-[#dce6ff] disabled:opacity-50"
                       >
                         {loading.has(group.band)
                           ? "Loading…"

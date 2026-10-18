@@ -1,5 +1,6 @@
 "use client"
 
+import { Arrow } from "@/app/_icons"
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { track } from "@vercel/analytics/react"
@@ -93,23 +94,23 @@ export function InstallProgress({ signedIn, outcome }: { signedIn: boolean; outc
           : "Queued. Each repository appears as its scan finishes — large ones take a few minutes."
 
   return (
-    <div className="mt-6 rounded-lg border border-edge p-5">
+    <div className="mt-6 rounded-[3px] border border-edge p-5">
       <p
         // The outcome arrives long after the page is read, so it is announced
         // rather than only drawn.
         role="status"
         aria-live="polite"
-        className={`text-sm ${count && count > 0 ? "text-mint" : gaveUp ? "text-amber-500" : "text-muted"}`}
+        className={`text-sm ${count && count > 0 ? "text-lilac" : gaveUp ? "text-ember" : "text-muted"}`}
       >
         {message}
       </p>
 
       <Link
         href="/dashboard"
-        className="mt-4 inline-flex items-center gap-2 rounded-md bg-mint px-4 py-2.5 text-sm font-medium text-surface transition-colors hover:bg-mint/90"
+        className="mt-4 inline-flex items-center gap-2 rounded-[3px] bg-lilac px-4 py-2.5 text-sm font-medium text-surface transition-colors hover:bg-lilac/90"
       >
         {count && count > 0 ? "Open your board" : "Go to the dashboard"}
-        <span aria-hidden="true">→</span>
+        <Arrow />
       </Link>
     </div>
   )

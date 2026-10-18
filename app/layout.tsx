@@ -1,18 +1,25 @@
 import type { Metadata } from "next"
-import { JetBrains_Mono, Space_Grotesk } from "next/font/google"
+import { Archivo, JetBrains_Mono } from "next/font/google"
 import { Analytics } from "./analytics"
 import "./globals.css"
 
 /**
- * The interface family, replacing Inter across the whole site.
+ * The display and interface family.
  *
- * Loaded as a variable font, which covers 300–700. It has no weight above 700,
- * so anything asking for 800 gets a synthesised bold rather than a real cut —
- * the hero headline is set to 700 for that reason.
+ * `axes: ["wdth"]` is the reason this face was chosen over a condensed static
+ * cut. The width axis runs 62–125, so the headline can be set genuinely narrow
+ * and the labels genuinely wide from one file, which is what the design system
+ * asks for — a second family to get condensed display would cost another
+ * download to say the same thing.
+ *
+ * Next only ships the weight axis unless the extra ones are named here, so
+ * omitting `axes` would silently give a fixed-width font and every
+ * `font-stretch` in the page would do nothing at all.
  */
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
+  axes: ["wdth"],
 })
 
 // Self-hosted by next/font rather than the two <link> tags the design used:
@@ -54,8 +61,9 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     url: "/",
     locale: "en",
-    // og:image comes from app/opengraph-image.png by file convention. Do not
-    // add an `images` key here — it is silently ignored, the convention wins.
+    // og:image comes from app/opengraph-image.tsx by file convention — it is
+    // generated from code at build time. Do not add an `images` key here: it
+    // is silently ignored, the convention wins.
     //
     // og:image:alt is not emitted by this version of Next: neither the
     // documented .alt.txt sibling nor an explicit declaration produces the tag.
@@ -83,7 +91,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${archivo.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-surface text-ink">
         {children}

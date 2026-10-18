@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Tooling that happens to live in the repo, not source we own. The
+    // impeccable skill vendors bundled browser scripts, and linting a minified
+    // UMD bundle produced 95 warnings about code nobody here will ever edit —
+    // enough noise to hide the one real error underneath it.
+    ".claude/**",
   ]),
 ]);
 

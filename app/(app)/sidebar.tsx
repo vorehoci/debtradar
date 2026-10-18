@@ -32,7 +32,7 @@ function NavLink({
     <Link
       href={href}
       className={`rounded px-2.5 py-1.5 text-sm transition-colors ${
-        active ? "bg-mint/10 font-medium text-mint" : "text-muted hover:text-ink"
+        active ? "bg-lilac/10 font-medium text-lilac" : "text-muted hover:text-ink"
       }`}
     >
       {children}
@@ -55,7 +55,7 @@ export function Sidebar({ repos }: { repos: SidebarRepo[] }) {
       <Link
         href="/dashboard"
         className={`rounded px-2.5 py-1.5 text-sm transition-colors ${
-          repoId === null ? "bg-mint/10 font-medium text-mint" : "text-muted hover:text-ink"
+          repoId === null ? "bg-lilac/10 font-medium text-lilac" : "text-muted hover:text-ink"
         }`}
       >
         Home

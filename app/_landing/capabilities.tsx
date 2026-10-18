@@ -1,5 +1,5 @@
 /**
- * The capabilities grid: six cards.
+ * The capabilities section: six rows.
  *
  * Only one of the design's six survived intact. The rest described a different
  * product, and three were replaced outright with things that ship:
@@ -22,8 +22,9 @@
  * The mobile frame proposed its own six, including a blast-radius graph, a CI
  * gate and Jira/Linear export. Same corrections, one shared list.
  *
- * Layout, from `breakpoints.ts`: wide icon-left cards in a stack below `lg:`,
- * a three-column grid of tall cards above it.
+ * Layout: a specification list of six rows separated by hairline rules. It was
+ * a six-card grid, which is the card scaffold the craft floor refuses; the
+ * rows carry the same facts and stack to one column below `lg:`.
  */
 
 type Feature = {
@@ -117,48 +118,48 @@ export function Capabilities() {
   return (
     <section
       aria-label="Capabilities"
-      className="flex w-full flex-col items-center gap-7 px-5 py-[60px] lg:gap-10 lg:px-[clamp(20px,4vw,56px)] lg:pt-0 lg:pb-[90px]"
+      className="flex w-full flex-col items-center gap-9 px-5 py-[60px] lg:gap-12 lg:px-[clamp(20px,4vw,56px)] lg:pt-0 lg:pb-[90px]"
     >
-      <div className="flex w-full max-w-[1120px] flex-col gap-2.5 lg:gap-3">
-        <p className="font-mono text-[11px] tracking-[2px] text-mint lg:text-xs">
-          {"// CAPABILITIES"}
-        </p>
-
-        <h2 className="text-[28px] leading-[1.15] font-bold text-[#e8f2ec] lg:text-[clamp(30px,3.6vw,46px)] lg:leading-[1.1] lg:text-[#eaf6f0]">
+      <div className="flex w-full max-w-[1120px] flex-col gap-3">
+        <h2 className="text-[clamp(28px,3.4vw,46px)] leading-[1.08] font-semibold tracking-[-.03em] [font-stretch:80%]">
           Built for repos that got away from you.
         </h2>
 
         {/* Narrow frames only. The design's subline promised the tools "you
             already ship with" — that was the Jira, Linear and CI integration
             story, none of which exists. */}
-        <p className="text-[15px] leading-[1.55] text-[#7c8c84] lg:hidden">
+        <p className="max-w-[62ch] text-[15px] leading-[1.6] text-subtle lg:hidden">
           Indexed, scored, and explained — so the four that matter surface before the four hundred
           that do not.
         </p>
       </div>
 
-      <div className="flex w-full max-w-[1120px] flex-col gap-2.5 lg:flex-row lg:flex-wrap lg:gap-6">
+      {/*
+        A specification list, not a card grid.
+
+        This shipped as six equal cards of icon-tile plus heading plus body,
+        which is the craft floor's first refusal and the one section of the
+        page that could have been lifted intact into any other product. Rules
+        and a split row carry the same six facts with none of the scaffold, and
+        the icons sit inline at text weight instead of in chips.
+      */}
+      <dl className="w-full max-w-[1120px] border-t border-edge">
         {FEATURES.map((feature) => (
           <div
             key={feature.title}
-            className="flex flex-row items-center gap-3.5 rounded-xl border border-[#18241e] bg-[#0d1512] p-4 lg:min-w-[300px] lg:flex-1 lg:basis-[357px] lg:flex-col lg:items-start lg:gap-3.5 lg:rounded-[14px] lg:border-[#1a241f] lg:bg-[#0d1411] lg:p-[26px]"
+            className="grid items-baseline gap-x-10 gap-y-2 border-b border-edge py-6 lg:grid-cols-[minmax(0,22rem)_1fr] lg:py-7"
           >
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-[10px] border border-[#1e2b25] bg-[#070b09] text-mint lg:size-[42px] lg:border-0 lg:bg-[#12211b]">
-              {feature.icon}
-            </div>
+            <dt className="flex items-center gap-3 text-[17px] font-semibold tracking-[-.01em] text-ink lg:text-[19px]">
+              <span className="shrink-0 text-lilac">{feature.icon}</span>
+              {feature.title}
+            </dt>
 
-            <div className="flex min-w-0 flex-col gap-1 lg:gap-3.5">
-              <h3 className="text-[15px] font-medium text-[#e8f2ec] lg:text-xl lg:font-bold lg:text-[#eaf6f0]">
-                {feature.title}
-              </h3>
-
-              <p className="text-[13px] leading-[1.5] text-[#7c8c84] lg:text-[15px] lg:leading-[1.6] lg:text-[#8aa396]">
-                {feature.body}
-              </p>
-            </div>
+            <dd className="max-w-[68ch] text-[14.5px] leading-[1.65] text-subtle lg:text-[15.5px]">
+              {feature.body}
+            </dd>
           </div>
         ))}
-      </div>
+      </dl>
     </section>
   )
 }

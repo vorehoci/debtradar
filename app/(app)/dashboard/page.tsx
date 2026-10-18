@@ -21,7 +21,7 @@ export default async function Dashboard() {
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-10">
       <header className="mb-10">
-        <h1 className="text-2xl font-semibold tracking-tight">Repositories</h1>
+        <h1 className="text-[28px] font-semibold tracking-[-.03em] [font-stretch:80%]">Repositories</h1>
         <p className="mt-1 text-sm text-muted">TODOs ranked by how much they are likely to hurt.</p>
       </header>
 
@@ -33,7 +33,7 @@ export default async function Dashboard() {
             <li key={repo.id}>
               <Link
                 href={`/repos/${repo.id}`}
-                className="flex items-center justify-between gap-4 rounded-lg border border-edge px-5 py-4 transition-colors hover:border-edge-strong"
+                className="flex items-center justify-between gap-4 rounded-[3px] border border-edge px-5 py-4 transition-colors hover:border-edge-strong"
               >
                 <div>
                   <div>

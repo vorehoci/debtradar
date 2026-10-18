@@ -15,7 +15,12 @@ export interface CommentCandidate {
   marker: string | null
 }
 
-const MARKERS = ["TODO", "FIXME", "HACK", "XXX", "BUG", "OPTIMIZE", "REFACTOR"] as const
+/**
+ * Exported so the landing page can state how many markers are recognised
+ * without a second, hand-maintained copy of the number. A figure on a public
+ * page that is typed rather than derived is a claim waiting to go stale.
+ */
+export const MARKERS = ["TODO", "FIXME", "HACK", "XXX", "BUG", "OPTIMIZE", "REFACTOR"] as const
 
 const MARKER_PATTERN = new RegExp(`\\b(${MARKERS.join("|")})\\b`, "gi")
 

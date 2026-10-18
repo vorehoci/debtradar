@@ -1,4 +1,5 @@
 import { Suspense } from "react"
+import { Arrow } from "@/app/_icons"
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { auth } from "@/auth"
@@ -15,7 +16,7 @@ export const dynamic = "force-dynamic"
 
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-lg border border-edge p-4">
+    <div className="rounded-[3px] border border-edge p-4">
       <p className="text-xs text-muted">{label}</p>
       <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
       {hint ? <p className="mt-0.5 text-[11px] text-faint">{hint}</p> : null}
@@ -79,7 +80,7 @@ async function ScanFreshness({ repo }: { repo: ScannedRepository }) {
  */
 function Line({ tone, children }: { tone: "quiet" | "warn"; children: React.ReactNode }) {
   return (
-    <p className={`mt-1.5 text-xs ${tone === "warn" ? "text-amber-500" : "text-faint"}`}>
+    <p className={`mt-1.5 text-xs ${tone === "warn" ? "text-ember" : "text-faint"}`}>
       {children}
     </p>
   )
@@ -112,7 +113,7 @@ export default async function RepoOverview({ params }: { params: Promise<{ id: s
   return (
     <main className="mx-auto w-full max-w-4xl px-6 py-10">
       <header className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="text-[28px] font-semibold tracking-[-.03em] [font-stretch:80%]">
           <span className="text-muted">{repo.owner}/</span>
           {repo.name}
         </h1>
@@ -134,13 +135,13 @@ export default async function RepoOverview({ params }: { params: Promise<{ id: s
       </div>
 
       <section className="mb-8">
-        <h2 className="mb-3 text-sm font-medium">By severity</h2>
+        <h2 className="mb-3 text-[12px] font-semibold uppercase tracking-[.18em] text-subtle">By severity</h2>
         <BandChart counts={counts} />
       </section>
 
       <section className="mb-8 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-lg border border-edge p-4">
-          <h2 className="text-sm font-medium">How they were found</h2>
+        <div className="rounded-[3px] border border-edge p-4">
+          <h2 className="text-[12px] font-semibold uppercase tracking-[.18em] text-subtle">How they were found</h2>
           <dl className="mt-3 space-y-1.5 text-xs">
             <div className="flex justify-between">
               <dt className="text-muted">Marked (TODO, FIXME…)</dt>
@@ -157,9 +158,9 @@ export default async function RepoOverview({ params }: { params: Promise<{ id: s
           </dl>
         </div>
 
-        <div className="flex flex-col justify-between rounded-lg border border-edge p-4">
+        <div className="flex flex-col justify-between rounded-[3px] border border-edge p-4">
           <div>
-            <h2 className="text-sm font-medium">Unmarked comments</h2>
+            <h2 className="text-[12px] font-semibold uppercase tracking-[.18em] text-subtle">Unmarked comments</h2>
             <p className="mt-1 text-xs text-muted">
               Regular scans only catch comments carrying a marker. This reads the rest and keeps the
               ones that describe real work.
@@ -186,7 +187,8 @@ export default async function RepoOverview({ params }: { params: Promise<{ id: s
         href={`/repos/${repositoryId}/board`}
         className="inline-block rounded border border-edge-strong px-3 py-2 text-xs hover:border-edge-strong"
       >
-        Open the board →
+        Open the board
+        <Arrow />
       </Link>
     </main>
   )

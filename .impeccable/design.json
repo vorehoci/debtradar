@@ -1,0 +1,543 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-18T00:00:00.000Z",
+  "title": "Design System: debtradar",
+  "extensions": {
+    "colorMeta": {
+      "void": {
+        "role": "neutral",
+        "displayName": "Void",
+        "canonical": "#0b0d1a",
+        "tonalRamp": [
+          "oklch(12% 0.04 275)",
+          "oklch(20% 0.045 275)",
+          "oklch(30% 0.05 275)",
+          "oklch(42% 0.05 275)",
+          "oklch(55% 0.045 275)",
+          "oklch(68% 0.035 275)",
+          "oklch(82% 0.025 275)",
+          "oklch(95% 0.012 275)"
+        ]
+      },
+      "ink-deep": {
+        "role": "neutral",
+        "displayName": "Ink Deep",
+        "canonical": "#13162b",
+        "tonalRamp": [
+          "oklch(15% 0.045 277)",
+          "oklch(23% 0.05 277)",
+          "oklch(33% 0.052 277)",
+          "oklch(45% 0.05 277)",
+          "oklch(57% 0.045 277)",
+          "oklch(70% 0.035 277)",
+          "oklch(83% 0.025 277)",
+          "oklch(95% 0.012 277)"
+        ]
+      },
+      "night": {
+        "role": "neutral",
+        "displayName": "Night",
+        "canonical": "#1a1d3a",
+        "tonalRamp": [
+          "oklch(17% 0.055 278)",
+          "oklch(25% 0.06 278)",
+          "oklch(35% 0.062 278)",
+          "oklch(47% 0.058 278)",
+          "oklch(59% 0.05 278)",
+          "oklch(71% 0.04 278)",
+          "oklch(84% 0.028 278)",
+          "oklch(95% 0.014 278)"
+        ]
+      },
+      "lilac": {
+        "role": "secondary",
+        "displayName": "Lilac",
+        "canonical": "#6a6cf6",
+        "note": "Also --brand-accent. Measures 4.6:1 on the void.",
+        "tonalRamp": [
+          "oklch(20% 0.16 272)",
+          "oklch(30% 0.19 272)",
+          "oklch(40% 0.22 272)",
+          "oklch(50% 0.24 272)",
+          "oklch(58% 0.23 272)",
+          "oklch(70% 0.17 272)",
+          "oklch(83% 0.10 272)",
+          "oklch(95% 0.04 272)"
+        ]
+      },
+      "mist": {
+        "role": "secondary",
+        "displayName": "Mist",
+        "canonical": "#bfd2ff",
+        "tonalRamp": [
+          "oklch(20% 0.05 268)",
+          "oklch(32% 0.06 268)",
+          "oklch(44% 0.07 268)",
+          "oklch(56% 0.075 268)",
+          "oklch(68% 0.07 268)",
+          "oklch(79% 0.06 268)",
+          "oklch(87% 0.05 268)",
+          "oklch(96% 0.02 268)"
+        ]
+      },
+      "ember": {
+        "role": "primary",
+        "displayName": "Ember",
+        "canonical": "#ff6a3d",
+        "note": "Scarce by contract: active state and primary action only.",
+        "tonalRamp": [
+          "oklch(22% 0.09 37)",
+          "oklch(33% 0.13 37)",
+          "oklch(44% 0.17 37)",
+          "oklch(55% 0.20 37)",
+          "oklch(68% 0.20 37)",
+          "oklch(78% 0.16 37)",
+          "oklch(88% 0.09 37)",
+          "oklch(96% 0.035 37)"
+        ]
+      },
+      "band-low": {
+        "role": "tertiary",
+        "displayName": "Band Low — Cold Steel",
+        "canonical": "#6e7ba6",
+        "tonalRamp": [
+          "oklch(18% 0.04 268)",
+          "oklch(28% 0.05 268)",
+          "oklch(38% 0.058 268)",
+          "oklch(48% 0.062 268)",
+          "oklch(57% 0.06 268)",
+          "oklch(70% 0.05 268)",
+          "oklch(83% 0.035 268)",
+          "oklch(95% 0.015 268)"
+        ]
+      },
+      "band-moderate": {
+        "role": "tertiary",
+        "displayName": "Band Moderate — Lilac",
+        "canonical": "#6a6cf6",
+        "tonalRamp": [
+          "oklch(20% 0.16 272)",
+          "oklch(30% 0.19 272)",
+          "oklch(40% 0.22 272)",
+          "oklch(50% 0.24 272)",
+          "oklch(58% 0.23 272)",
+          "oklch(70% 0.17 272)",
+          "oklch(83% 0.10 272)",
+          "oklch(95% 0.04 272)"
+        ]
+      },
+      "band-high": {
+        "role": "tertiary",
+        "displayName": "Band High — Field Violet",
+        "canonical": "#b44be8",
+        "tonalRamp": [
+          "oklch(22% 0.13 310)",
+          "oklch(32% 0.17 310)",
+          "oklch(42% 0.21 310)",
+          "oklch(52% 0.24 310)",
+          "oklch(61% 0.24 310)",
+          "oklch(73% 0.17 310)",
+          "oklch(85% 0.10 310)",
+          "oklch(96% 0.04 310)"
+        ]
+      },
+      "band-critical": {
+        "role": "tertiary",
+        "displayName": "Band Critical — Ember",
+        "canonical": "#ff6a3d",
+        "tonalRamp": [
+          "oklch(22% 0.09 37)",
+          "oklch(33% 0.13 37)",
+          "oklch(44% 0.17 37)",
+          "oklch(55% 0.20 37)",
+          "oklch(68% 0.20 37)",
+          "oklch(78% 0.16 37)",
+          "oklch(88% 0.09 37)",
+          "oklch(96% 0.035 37)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#dce6ff",
+        "tonalRamp": [
+          "oklch(20% 0.03 270)",
+          "oklch(32% 0.04 270)",
+          "oklch(44% 0.045 270)",
+          "oklch(56% 0.05 270)",
+          "oklch(68% 0.045 270)",
+          "oklch(80% 0.04 270)",
+          "oklch(91% 0.03 270)",
+          "oklch(97% 0.012 270)"
+        ]
+      },
+      "subtle": {
+        "role": "neutral",
+        "displayName": "Subtle",
+        "canonical": "#9fb0dd",
+        "tonalRamp": [
+          "oklch(19% 0.035 271)",
+          "oklch(30% 0.045 271)",
+          "oklch(41% 0.055 271)",
+          "oklch(52% 0.06 271)",
+          "oklch(63% 0.06 271)",
+          "oklch(74% 0.055 271)",
+          "oklch(86% 0.04 271)",
+          "oklch(96% 0.015 271)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "canonical": "#7d8cb8",
+        "tonalRamp": [
+          "oklch(18% 0.035 272)",
+          "oklch(28% 0.045 272)",
+          "oklch(39% 0.055 272)",
+          "oklch(50% 0.058 272)",
+          "oklch(61% 0.055 272)",
+          "oklch(73% 0.048 272)",
+          "oklch(85% 0.035 272)",
+          "oklch(96% 0.014 272)"
+        ]
+      },
+      "faint": {
+        "role": "neutral",
+        "displayName": "Faint",
+        "canonical": "#727da3",
+        "note": "Lifted from #5a6185, which measured 3.21:1 on the void behind 11-13px text. The shipped value clears 4.5:1.",
+        "tonalRamp": [
+          "oklch(18% 0.03 269)",
+          "oklch(28% 0.04 269)",
+          "oklch(38% 0.048 269)",
+          "oklch(48% 0.05 269)",
+          "oklch(58% 0.048 269)",
+          "oklch(71% 0.04 269)",
+          "oklch(84% 0.03 269)",
+          "oklch(96% 0.012 269)"
+        ]
+      },
+      "edge": {
+        "role": "neutral",
+        "displayName": "Edge",
+        "canonical": "#232745",
+        "tonalRamp": [
+          "oklch(16% 0.05 278)",
+          "oklch(25% 0.055 278)",
+          "oklch(35% 0.058 278)",
+          "oklch(46% 0.055 278)",
+          "oklch(58% 0.05 278)",
+          "oklch(70% 0.04 278)",
+          "oklch(83% 0.028 278)",
+          "oklch(95% 0.012 278)"
+        ]
+      },
+      "edge-strong": {
+        "role": "neutral",
+        "displayName": "Edge Strong",
+        "canonical": "#2e3357",
+        "tonalRamp": [
+          "oklch(18% 0.06 278)",
+          "oklch(27% 0.068 278)",
+          "oklch(37% 0.072 278)",
+          "oklch(48% 0.068 278)",
+          "oklch(60% 0.06 278)",
+          "oklch(72% 0.048 278)",
+          "oklch(84% 0.033 278)",
+          "oklch(95% 0.014 278)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The hero line only, set at wdth 64% so four words hold a line that would otherwise take six."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section openers, wdth 78-80%."
+      },
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "Standalone queried numerals in the stat band, wdth 76% and tabular."
+      },
+      "title": { "displayName": "Title", "purpose": "Row and card headings." },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Paragraphs, capped at 62ch in the hero and 68ch in specification rows."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Controls, nav, band names, stage names. Uppercase, tracked 0.16-0.20em."
+      },
+      "micro": {
+        "displayName": "Micro",
+        "purpose": "Margin instrumentation: readout caption, environment readout, scroll rail."
+      },
+      "code": {
+        "displayName": "Code",
+        "purpose": "JetBrains Mono, reserved for file paths, line numbers and scan output."
+      }
+    },
+    "shadows": [
+      {
+        "name": "control-lift",
+        "value": "0 14px 34px -16px rgba(106,108,246,.95)",
+        "purpose": "Under the primary control only. Offset down with negative spread, so it reads as depth rather than glow."
+      },
+      {
+        "name": "panel-drop",
+        "value": "0 30px 80px 0 rgba(0,0,0,.6)",
+        "purpose": "Desktop-only ambient drop beneath the widest panels (scan output, list view). Black and soft, never tinted."
+      }
+    ],
+    "motion": [
+      {
+        "name": "fade-in",
+        "value": "fade-in 160ms ease-out",
+        "purpose": "Opacity-only entrance for things that appear where nothing was."
+      },
+      {
+        "name": "rise-in",
+        "value": "rise-in 180ms ease-out",
+        "purpose": "Opacity plus a 4px translate; compositor-only."
+      },
+      {
+        "name": "slide-in-right",
+        "value": "slide-in-right 220ms cubic-bezier(0.32, 0.72, 0, 1)",
+        "purpose": "Panels entering from the right edge."
+      },
+      {
+        "name": "drift",
+        "value": "drift 38s ease-in-out infinite alternate",
+        "purpose": "The still field's slow transform drift, for phones and reduced-motion visitors."
+      },
+      {
+        "name": "radar-sweep",
+        "value": "radar-sweep 3.2s linear infinite",
+        "purpose": "The brand mark's conic sweep, brightness peaking at the leading edge."
+      },
+      {
+        "name": "blip",
+        "value": "blip 1.6s ease-in-out infinite",
+        "purpose": "A pulsing live indicator. Expanding ring, lilac at 50% mix."
+      },
+      {
+        "name": "state-transition",
+        "value": "color/border 200ms, transform 200ms",
+        "purpose": "Control hover: border and label to ember, arrow nudged 4px right."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "@media (prefers-reduced-motion: reduce) { animation-duration: 0.01ms; transition-duration: 0.01ms }",
+        "purpose": "Stillness rather than a slower version of the same motion. Load-bearing, not decorative."
+      }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "390px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "frame-tablet", "value": "834px" },
+      { "name": "frame-desktop", "value": "1280px" },
+      { "name": "content-max", "value": "1120px" },
+      { "name": "gutter", "value": "clamp(20px, 4vw, 56px)" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Control",
+      "kind": "button",
+      "refersTo": "control-primary",
+      "description": "The hero's main action. Hairline lilac rectangle over a faint lilac fill, with a drawn arrow that nudges on hover.",
+      "html": "<a class=\"ds-control ds-control-primary\" href=\"#\">See 792 TODOs in n8n<svg class=\"ds-arrow\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"square\" aria-hidden=\"true\"><path d=\"M4 12h15M13 6l6 6-6 6\"/></svg></a>",
+      "css": ".ds-control { display: inline-flex; align-items: center; gap: 12px; padding: 16px 28px; font-family: var(--font-archivo), system-ui, sans-serif; font-size: 13.5px; text-transform: uppercase; letter-spacing: .16em; text-decoration: none; border-radius: 2px; transition: color .2s, border-color .2s, background-color .2s; } .ds-arrow { width: 16px; height: 16px; transition: transform .2s; } .ds-control:hover .ds-arrow { transform: translateX(4px); } .ds-control-primary { border: 1px solid var(--color-lilac, #6a6cf6); background: rgba(106,108,246,.18); color: var(--color-ink, #dce6ff); box-shadow: 0 14px 34px -16px rgba(106,108,246,.95); } .ds-control-primary:hover { border-color: var(--color-ember, #ff6a3d); color: var(--color-ember, #ff6a3d); } .ds-control-primary:focus-visible { outline: 2px solid var(--color-ember, #ff6a3d); outline-offset: 2px; border-radius: 2px; }"
+    },
+    {
+      "name": "Secondary Control",
+      "kind": "button",
+      "refersTo": "control-secondary",
+      "description": "The second offer in the hero. Half-strength lilac edge, no fill, full-strength label — a clear step below the primary but never the faintest thing on screen.",
+      "html": "<button class=\"ds-control ds-control-secondary\" type=\"button\">Scan my repository<svg class=\"ds-arrow2\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"square\" aria-hidden=\"true\"><path d=\"M4 12h15M13 6l6 6-6 6\"/></svg></button>",
+      "css": ".ds-control-secondary { display: inline-flex; align-items: center; gap: 12px; padding: 16px 28px; font-family: var(--font-archivo), system-ui, sans-serif; font-size: 13.5px; text-transform: uppercase; letter-spacing: .16em; background: transparent; border: 1px solid rgba(106,108,246,.6); color: var(--color-ink, #dce6ff); border-radius: 2px; cursor: pointer; transition: color .2s, border-color .2s; } .ds-arrow2 { width: 16px; height: 16px; transition: transform .2s; } .ds-control-secondary:hover .ds-arrow2 { transform: translateX(4px); } .ds-control-secondary:hover { border-color: var(--color-ember, #ff6a3d); color: var(--color-ember, #ff6a3d); } .ds-control-secondary:focus-visible { outline: 2px solid var(--color-ember, #ff6a3d); outline-offset: 2px; }"
+    },
+    {
+      "name": "Quiet Control",
+      "kind": "button",
+      "refersTo": "control-quiet",
+      "description": "The tertiary control used in navigation and section headers. Edge-strong hairline, subtle label, ember on hover.",
+      "html": "<a class=\"ds-control-quiet\" href=\"#\">Open the full board<svg class=\"ds-arrow3\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"square\" aria-hidden=\"true\"><path d=\"M4 12h15M13 6l6 6-6 6\"/></svg></a>",
+      "css": ".ds-control-quiet { display: inline-flex; align-items: center; gap: 10px; padding: 12px 20px; font-family: var(--font-archivo), system-ui, sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: .16em; text-decoration: none; border: 1px solid var(--color-edge-strong, #2e3357); color: var(--color-subtle, #9fb0dd); border-radius: 2px; transition: color .2s, border-color .2s; } .ds-arrow3 { width: 16px; height: 16px; transition: transform .2s; } .ds-control-quiet:hover { border-color: var(--color-ember, #ff6a3d); color: var(--color-ember, #ff6a3d); } .ds-control-quiet:hover .ds-arrow3 { transform: translateX(4px); } .ds-control-quiet:focus-visible { outline: 2px solid var(--color-ember, #ff6a3d); outline-offset: 2px; }"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "input-search",
+      "description": "The board's filter field. Panel ground inside an edge-strong hairline at the world's 3px radius; focus shifts the border to half-strength lilac.",
+      "html": "<input class=\"ds-input-search\" type=\"search\" placeholder=\"Search text or path…\" />",
+      "css": ".ds-input-search { width: 224px; padding: 6px 12px; font-family: var(--font-archivo), system-ui, sans-serif; font-size: 12px; color: var(--color-ink, #dce6ff); background: var(--color-panel, #13162b); border: 1px solid var(--color-edge-strong, #2e3357); border-radius: 3px; outline: none; transition: border-color .2s; } .ds-input-search::placeholder { color: var(--color-faint, #727da3); } .ds-input-search:focus { border-color: rgba(106,108,246,.5); } .ds-input-search:focus-visible { outline: 2px solid var(--color-ember, #ff6a3d); outline-offset: 2px; }"
+    },
+    {
+      "name": "Navigation Link",
+      "kind": "nav",
+      "refersTo": "nav-link",
+      "description": "Header navigation. Tiny tracked uppercase in subtle, hovering to ember. No link points at a route that does not exist.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-link\" href=\"#\">GitHub App</a><a class=\"ds-nav-link ds-nav-link-boxed\" href=\"#\">Sign in</a></nav>",
+      "css": ".ds-nav { display: flex; align-items: center; gap: 28px; } .ds-nav-link { font-family: var(--font-archivo), system-ui, sans-serif; font-size: 12.5px; letter-spacing: .16em; text-transform: uppercase; text-decoration: none; color: var(--color-subtle, #9fb0dd); transition: color .2s, border-color .2s; } .ds-nav-link:hover { color: var(--color-ember, #ff6a3d); } .ds-nav-link-boxed { padding: 8px 16px; border: 1px solid var(--color-edge-strong, #2e3357); } .ds-nav-link-boxed:hover { border-color: var(--color-ember, #ff6a3d); } .ds-nav-link:focus-visible { outline: 2px solid var(--color-ember, #ff6a3d); outline-offset: 2px; }"
+    },
+    {
+      "name": "Finding Cell",
+      "kind": "card",
+      "refersTo": "finding-cell",
+      "description": "One ranked finding from the real scan. Panel ground in a seamed grid — no shadow, no radius to speak of — with the severity mark, the band in words, the rank numeral, the path in mono, and the score beside the signals that produced it.",
+      "html": "<li class=\"ds-finding\"><div class=\"ds-finding-head\"><span class=\"ds-band\"><span class=\"ds-band-mark\"></span><span class=\"ds-band-name\">critical</span></span><span class=\"ds-rank\">01</span></div><p class=\"ds-finding-text\">FIXME: this retry loop will spin forever if the webhook never acks.</p><div class=\"ds-finding-foot\"><code class=\"ds-path\">packages/core/src/WorkflowExecute.ts:812</code><div class=\"ds-meta\"><span class=\"ds-score\">risk 94</span><span class=\"ds-marker\">FIXME</span><span>1,284d old</span><span>churn 37</span></div></div></li>",
+      "css": ".ds-finding { list-style: none; display: flex; flex-direction: column; gap: 16px; padding: 24px; background: var(--color-ink-deep, #13162b); outline: 1px solid var(--color-edge, #232745); font-family: var(--font-archivo), system-ui, sans-serif; } .ds-finding-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; } .ds-band { display: inline-flex; align-items: center; gap: 10px; } .ds-band-mark { width: 10px; height: 10px; transform: rotate(45deg); background: var(--color-band-critical, #ff6a3d); } .ds-band-name { font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--color-subtle, #9fb0dd); } .ds-rank { font-size: 13px; font-variant-numeric: tabular-nums; color: var(--color-faint, #727da3); } .ds-finding-text { margin: 0; font-size: 15.5px; line-height: 1.5; color: var(--color-ink, #dce6ff); } .ds-finding-foot { margin-top: auto; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--color-edge, #232745); padding-top: 16px; } .ds-path { font-family: var(--font-jetbrains-mono), ui-monospace, monospace; font-size: 12.5px; color: var(--color-muted, #7d8cb8); } .ds-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font-size: 12px; color: var(--color-faint, #727da3); font-variant-numeric: tabular-nums; } .ds-score { font-weight: 600; color: var(--color-ink, #dce6ff); } .ds-marker { color: var(--color-subtle, #9fb0dd); }"
+    },
+    {
+      "name": "Severity Mark",
+      "kind": "chip",
+      "refersTo": "band-mark",
+      "description": "The four-band ramp, lifted from the field's own filaments. The band is always written beside the mark; an inferred finding carries the mark dimmed with an offset faint outline.",
+      "html": "<div class=\"ds-bands\"><span class=\"ds-b\"><i class=\"ds-m ds-m-low\"></i>low</span><span class=\"ds-b\"><i class=\"ds-m ds-m-mod\"></i>moderate</span><span class=\"ds-b\"><i class=\"ds-m ds-m-high\"></i>high</span><span class=\"ds-b\"><i class=\"ds-m ds-m-crit\"></i>critical</span><span class=\"ds-b ds-b-inferred\"><i class=\"ds-m ds-m-crit ds-m-inferred\"></i>undeclared</span></div>",
+      "css": ".ds-bands { display: flex; flex-wrap: wrap; gap: 20px; font-family: var(--font-archivo), system-ui, sans-serif; } .ds-b { display: inline-flex; align-items: center; gap: 10px; font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--color-subtle, #9fb0dd); } .ds-m { display: inline-block; width: 10px; height: 10px; transform: rotate(45deg); } .ds-m-low { background: var(--color-band-low, #6e7ba6); } .ds-m-mod { background: var(--color-band-moderate, #6a6cf6); } .ds-m-high { background: var(--color-band-high, #b44be8); } .ds-m-crit { background: var(--color-band-critical, #ff6a3d); } .ds-m-inferred { opacity: .6; outline: 1px solid var(--color-faint, #727da3); outline-offset: 2px; } .ds-b-inferred { font-style: italic; }"
+    },
+    {
+      "name": "Specification Row",
+      "kind": "custom",
+      "refersTo": "spec-row",
+      "description": "The replacement for a six-card feature grid. Hairline-ruled rows, two columns above 1024px, the icon inline at text weight in lilac rather than in a tile.",
+      "html": "<dl class=\"ds-spec\"><div class=\"ds-spec-row\"><dt class=\"ds-spec-t\"><svg class=\"ds-spec-i\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"4.5\"/><path d=\"M12 12 19 7\"/></svg>Full-tree scanning</dt><dd class=\"ds-spec-d\">Every TODO, FIXME, HACK and XXX across 18 languages and formats. The first scan reads the whole tree; after that, only what changed.</dd></div><div class=\"ds-spec-row\"><dt class=\"ds-spec-t\"><svg class=\"ds-spec-i\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"M4 7h16M4 12h10M4 17h5\"/></svg>Risk-weighted ranking</dt><dd class=\"ds-spec-d\">Age, file churn, author activity and marker severity fold into one 0–100 score you can actually sort by.</dd></div></dl>",
+      "css": ".ds-spec { margin: 0; border-top: 1px solid var(--color-edge, #232745); font-family: var(--font-archivo), system-ui, sans-serif; } .ds-spec-row { display: grid; align-items: baseline; gap: 8px 40px; grid-template-columns: minmax(0, 22rem) 1fr; border-bottom: 1px solid var(--color-edge, #232745); padding: 28px 0; } .ds-spec-t { display: flex; align-items: center; gap: 12px; font-size: 19px; font-weight: 600; letter-spacing: -.01em; color: var(--color-ink, #dce6ff); } .ds-spec-i { width: 21px; height: 21px; flex-shrink: 0; color: var(--color-lilac, #6a6cf6); } .ds-spec-d { margin: 0; max-width: 68ch; font-size: 15.5px; line-height: 1.65; color: var(--color-subtle, #9fb0dd); }"
+    },
+    {
+      "name": "Hero Readout",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "The live figures in the loader's position, bottom-left of the hero. One resolved sentence, every number queried, set in ink and tabular inside subtle prose — explicitly not a row of hero metrics.",
+      "html": "<p class=\"ds-readout\"><span class=\"ds-readout-cap\">n8n-io/n8n — scanned</span><strong class=\"ds-fig\">792</strong> notes ranked across <strong class=\"ds-fig\">4.3M</strong> lines. <strong class=\"ds-fig\">227</strong> of them nobody wrote down.</p>",
+      "css": ".ds-readout { max-width: 46ch; margin: 0; font-family: var(--font-archivo), system-ui, sans-serif; font-size: 16.5px; line-height: 1.6; color: var(--color-subtle, #9fb0dd); } .ds-readout-cap { display: block; margin-bottom: 10px; font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--color-faint, #727da3); } .ds-fig { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--color-ink, #dce6ff); }"
+    },
+    {
+      "name": "Display Line",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "The hero headline, set on Archivo's width axis at 64% so it reads as architecture rather than as a paragraph in large type. The one highlighted word is the system's single ember spend on this surface.",
+      "html": "<h1 class=\"ds-display\">Hundreds of notes.<br/><span class=\"ds-display-hot\">One</span> is about to hurt.</h1>",
+      "css": ".ds-display { margin: 0; max-width: 760px; font-family: var(--font-archivo), system-ui, sans-serif; font-size: clamp(42px, 7.4vw, 96px); font-weight: 600; line-height: .94; letter-spacing: -.035em; font-stretch: 64%; color: var(--color-ink, #dce6ff); } .ds-display-hot { color: var(--color-ember, #ff6a3d); }"
+    },
+    {
+      "name": "Still Field",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "The zero-shader rendition of the scan field, for phones and reduced-motion visitors: four radial pools in the band colours under a 4px mesh of void, drifting on transform only. Same composition as the shader — cold at the copy, heat low and right.",
+      "html": "<div class=\"ds-field\" aria-hidden=\"true\"><div class=\"ds-field-pools\"></div><div class=\"ds-field-mesh\"></div><div class=\"ds-field-scrim\"></div></div>",
+      "css": ".ds-field { position: relative; width: 100%; height: 320px; overflow: hidden; background: var(--color-void, #0b0d1a); } .ds-field-pools { position: absolute; inset: -12%; background: radial-gradient(52% 30% at 72% 70%, rgba(255,106,61,.70), transparent 72%), radial-gradient(58% 34% at 58% 52%, rgba(180,75,232,.62), transparent 74%), radial-gradient(66% 40% at 44% 32%, rgba(106,108,246,.52), transparent 76%), radial-gradient(44% 26% at 82% 16%, rgba(191,210,255,.20), transparent 72%); animation: ds-drift 38s ease-in-out infinite alternate; } .ds-field-mesh { position: absolute; inset: 0; opacity: .5; background-image: radial-gradient(circle, transparent 0 1px, var(--color-void, #0b0d1a) 1.4px); background-size: 4px 4px; } .ds-field-scrim { position: absolute; inset: 0; background: linear-gradient(100deg, var(--color-void, #0b0d1a) 0%, rgba(11,13,26,.94) 30%, rgba(11,13,26,.66) 52%, rgba(11,13,26,.18) 72%, transparent 88%); } @keyframes ds-drift { from { transform: translate3d(-2%, 1%, 0) scale(1.04); } to { transform: translate3d(2%, -1%, 0) scale(1.12); } } @media (prefers-reduced-motion: reduce) { .ds-field-pools { animation: none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Scan As Weather",
+    "overview": "debtradar renders a codebase the way a nowcast renders an atmosphere. The hero is not a backdrop behind a claim — it is a particle field whose filaments are where risk concentrates, cold at the left where the copy sits and running hot toward the lower right. Everything above the field is instrumentation read off that weather: a numbered stage index pinned to the left margin, tiny tracked labels at the edges, a live readout in the position a loader would occupy, a scroll rail at the right. The page is dark, cold, and mostly empty, and the one warm thing on it is the thing you are meant to press.\n\nThe density is instrument-panel rather than marketing-page. Structure is carried by hairlines and by background seams — a one-pixel grid gap showing the edge colour through a grid of panels — not by cards floating on shadow. Type does the heavy lifting through a width axis rather than through more families: one variable grotesk set genuinely narrow at architectural scale for display, and genuinely wide and tiny for labels. Monospace is reserved for things that are literally code: file paths, line numbers, scan output.\n\nConfirmed rejections: the category default of a dark hero with a terminal screenshot beside a \"ship faster\" headline, and its opposite, the neutral claim-and-screenshot page. The filled pill button is rejected. The equal-card feature grid is rejected — it shipped once and was replaced by a specification list. The previous near-black-plus-mint identity is removed outright: there is no mint and no green in this world.",
+    "keyCharacteristics": [
+      "Three cold grounds (void, ink-deep, night), two structural colours, one incandescent accent.",
+      "One variable grotesk driven on its width axis; 64% for display, 76–80% for figures and headlines.",
+      "Hairline rectangles with a drawn arrow for every control; no filled pills.",
+      "A four-band severity ramp lifted from the field's own filaments.",
+      "Every public figure queried from the database, never typed.",
+      "The shader is desktop-and-motion-gated by a decision that precedes its import."
+    ],
+    "rules": [
+      {
+        "name": "The One Heat Rule",
+        "body": "Ember appears at most twice in a viewport, and only as the active state or the primary action. A third simultaneous spend is a regression; it was raised as one and corrected by returning the secondary control to a lilac rest state.",
+        "section": "colors"
+      },
+      {
+        "name": "The Four-Band Rule",
+        "body": "The severity ramp is the field's own ramp — steel, lilac, violet, ember — so a band's colour and its position in the field mean the same thing. There are four bands because a fifth would have to come from outside that ramp.",
+        "section": "colors"
+      },
+      {
+        "name": "The Written Band Rule",
+        "body": "Band colour never carries meaning alone. The band name is always set in words beside its mark, because on this ramp violet-versus-ember is the difference between high and critical.",
+        "section": "colors"
+      },
+      {
+        "name": "The Cold Ground Rule",
+        "body": "Every ground is one of void, ink-deep, or night. Warmth on this page is information, never atmosphere.",
+        "section": "colors"
+      },
+      {
+        "name": "The Width-Axis Rule",
+        "body": "Condensed and extended come from the one loaded family's wdth axis, never from a second font file. The axis must be requested at load (axes: [\"wdth\"]); without it every font-stretch in the page silently does nothing.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Figures Rule",
+        "body": "Any number read against another number down a column — counts, risk scores, line numbers, index numerals — carries font-variant-numeric: tabular-nums via the .tabular class.",
+        "section": "typography"
+      },
+      {
+        "name": "The Queried Figure Rule",
+        "body": "Figures on public surfaces come from the database. The ranked findings, the stat band, the readout and the demo control's label are all queried; linesRead() exists specifically so a lines-scanned figure cannot go stale. A rhetorical number above a measured one reads as a page that does not know its own figures.",
+        "section": "typography"
+      },
+      {
+        "name": "The Deterministic Scrim Rule",
+        "body": "Copy over the field always has its own ground. A fixed multi-stop gradient darkens the copy column, the right rail, and the top and bottom strips, so the field can stay vivid where there is nothing to read instead of being dimmed everywhere to protect text in one corner. \"Mostly dark over there\" is not a contrast guarantee when the field moves.",
+        "section": "layout"
+      },
+      {
+        "name": "The Margin Instrumentation Rule",
+        "body": "The edges carry readouts, not decoration: a numbered stage index left, a scroll rail and environment readout right, a live figure bottom-left in the loader's position.",
+        "section": "layout"
+      },
+      {
+        "name": "The Offset Shadow Rule",
+        "body": "A shadow that carries depth carries an offset and a blur. Zero-offset coloured halos are not a depth device in this system and must not be used to lift a surface, a control, or a panel. The only zero-offset glows in the build belong to emissive marks, where the glow is the light source itself and not the elevation.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Tonal First Rule",
+        "body": "Reach for the next ground and a hairline before reaching for a shadow. Three of the four shipped shadows are desktop-only or single-instance; the whole application shell has none.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Hairline Rectangle Rule",
+        "body": "Chrome is a hairline-bordered rectangle at 3px or less. The filled pill is the category's button and this world does not wear it.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Drawn Icon Rule",
+        "body": "Every icon is an SVG path at the set's stroke weight. →, ›, ✓ and ■ are text, and they render at whatever weight and baseline the resolved font chose — which is how the page once shipped two different arrows one line apart.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do spend ember only on the active state and the primary action, at most twice in a viewport.",
+      "Do write the band name beside every band mark; colour never carries meaning alone.",
+      "Do build chrome as hairline rectangles at 3px or less with a drawn arrow.",
+      "Do get condensed and extended from Archivo's wdth axis (64% display, 76–80% figures and headlines), not from a second family.",
+      "Do reserve JetBrains Mono for code, paths, line numbers, and scan output.",
+      "Do mark comparable figures with .tabular.",
+      "Do query every figure on a public surface from the database.",
+      "Do draw icons as SVG at the set's stroke weight.",
+      "Do separate cells with a 1px seam over edge before reaching for a border or a shadow.",
+      "Do put the gating decision before a heavy dynamic import, and give the declined path a composition-matching still rendition that costs zero bytes of the thing it declined.",
+      "Do give copy over the field its own deterministic scrim.",
+      "Do let a data failure cost a section its figures, never the page its composition."
+    ],
+    "donts": [
+      "Don't use a filled pill as a control.",
+      "Don't introduce a fifth severity band; the ramp has four colours and no fifth one comes from the field.",
+      "Don't lift a surface or control with a zero-offset coloured halo; depth shadows carry offset and blur.",
+      "Don't use rounded-full on anything that is not a genuinely circular mark.",
+      "Don't let a unicode glyph stand in for an icon.",
+      "Don't reintroduce mint, green, or any warm hue other than ember; the grounds are cold by rule.",
+      "Don't build a feature section as a grid of equal icon-heading-body cards.",
+      "Don't ship a row of hero metrics in place of one resolved sentence.",
+      "Don't type a figure that the database can answer.",
+      "Don't make the conversion action the faintest element in a viewport.",
+      "Don't hide a loaded shader with a CSS class and call it gating.",
+      "Don't put a text colour under 4.5:1 on the void behind 11–13px type; faint is the floor and it is a role, not a licence."
+    ]
+  }
+}

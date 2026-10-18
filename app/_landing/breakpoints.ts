@@ -1,5 +1,5 @@
 /**
- * How the three Spline frames map onto Tailwind's screens.
+ * How the three landing frames map onto Tailwind's screens.
  *
  * The design file carries three frames — 390, 834 and 1280 — and they are not
  * one layout that reflows. The stat band alone changes from bordered cards to a

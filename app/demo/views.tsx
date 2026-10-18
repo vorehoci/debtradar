@@ -93,9 +93,9 @@ export function DemoViews({
             onClick={() => setOnlyClaude((on) => !on)}
             // Violet, matching the mark on the cards and the analysis controls:
             // every "this came from Claude" signal in the product is this hue.
-            className={`cursor-pointer rounded-full border px-3 py-1 text-xs transition-colors ${
+            className={`cursor-pointer rounded-[3px] border px-3 py-1 text-xs transition-colors ${
               onlyClaude
-                ? "border-violet-600 bg-violet-600 text-white"
+                ? "border-lilac bg-lilac/25 text-ink"
                 : "border-edge-strong text-muted hover:text-ink"
             }`}
           >
@@ -108,7 +108,7 @@ export function DemoViews({
         <div
           role="group"
           aria-label="Layout"
-          className="inline-flex overflow-hidden rounded-md border border-edge text-xs"
+          className="inline-flex overflow-hidden rounded-[3px] border border-edge text-xs"
         >
           {(["list", "board"] as const).map((mode) => {
             // With no override the active one is whichever CSS is showing, and
@@ -122,7 +122,9 @@ export function DemoViews({
                 aria-pressed={active}
                 onClick={() => setOverride(active ? null : mode)}
                 className={`cursor-pointer px-3 py-1.5 capitalize transition-colors ${
-                  active ? "bg-mint text-surface" : "text-muted hover:text-ink"
+                  // Filled is the category's toggle, not this world's. The pressed segment
+                  // takes an ember edge and full-strength ink instead.
+                  active ? "border-b-2 border-ember text-ink" : "border-b-2 border-transparent text-muted hover:text-ink"
                 }`}
               >
                 {mode}

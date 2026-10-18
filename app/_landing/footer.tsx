@@ -40,7 +40,7 @@ export function Footer() {
   return (
     <footer
       aria-label="Footer"
-      className="w-full bg-[#050907] px-5 pt-11 pb-9 lg:px-[clamp(20px,4vw,56px)] lg:pt-11 lg:pb-10"
+      className="w-full bg-[#080a14] px-5 pt-11 pb-9 lg:px-[clamp(20px,4vw,56px)] lg:pt-11 lg:pb-10"
     >
       <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-7 lg:flex-row lg:items-start lg:justify-between lg:gap-[60px]">
         <div className="flex flex-col gap-2.5 lg:max-w-[280px] lg:gap-3.5">
@@ -48,7 +48,7 @@ export function Footer() {
               footer's own small radar mark — one definition of the brand. */}
           <Brand className="text-base" />
 
-          <p className="text-[13px] leading-[1.6] text-[#8aa396]">
+          <p className="text-[13px] leading-[1.6] text-[#9fb0dd]">
             Code debt has a half-life. We tell you which half is about to go off.
           </p>
         </div>
@@ -64,7 +64,7 @@ export function Footer() {
               key={link.href}
               href={link.href}
               {...(link.newTab ? { target: "_blank", rel: "noreferrer" } : {})}
-              className="w-fit py-[5px] text-sm text-[#7c8c84] transition-colors hover:text-[#eaf6f0] lg:py-0 lg:text-[#7a9187]"
+              className="w-fit py-[5px] text-sm text-[#7d8cb8] transition-colors hover:text-[#dce6ff] lg:py-0 lg:text-[#dce6ff]"
             >
               {link.label}
             </a>
@@ -75,8 +75,8 @@ export function Footer() {
       {/* One bar at every width. The desktop frame tucks the copyright into the
           brand column instead, but that leaves it floating mid-footer once the
           links are taller than the brand block. */}
-      <div className="mx-auto mt-7 flex w-full max-w-[1120px] items-center border-t border-[#111c17] pt-[18px]">
-        <p className="font-mono text-[11px] text-[#3f5349]">© 2026 debtradar</p>
+      <div className="mx-auto mt-7 flex w-full max-w-[1120px] items-center border-t border-[#232745] pt-[18px]">
+        <p className="font-mono text-[11px] text-[#727da3]">© 2026 debtradar</p>
       </div>
     </footer>
   )

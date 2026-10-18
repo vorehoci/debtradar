@@ -1,4 +1,6 @@
 import { AnalysedMark } from "./analysed-mark"
+import { Chevron } from "@/app/_icons"
+
 import { DismissedChip } from "./dismissed-chip"
 import { FoundMark } from "./found-mark"
 import { ManualMark } from "./manual-mark"
@@ -24,13 +26,13 @@ export function Legend() {
     <details className="group relative text-right">
       <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-xs text-muted marker:content-[''] hover:text-ink">
         What do the icons mean?
-        <span className="transition-transform group-open:rotate-90">›</span>
+        <Chevron className="size-3.5 transition-transform group-open:rotate-90" />
       </summary>
 
       {/* Absolute so opening the legend overlays the board rather than pushing
           it down — the columns must not jump when this is toggled. Needs its
           own opaque surface and shadow now that it floats over content. */}
-      <ul className="absolute top-full right-0 z-20 mt-2 flex w-[min(20rem,calc(100vw-2rem))] flex-col gap-1.5 rounded-lg border border-edge bg-panel p-3 text-left shadow-lg">
+      <ul className="absolute top-full right-0 z-20 mt-2 flex w-[min(20rem,calc(100vw-2rem))] flex-col gap-1.5 rounded-[3px] border border-edge bg-panel p-3 text-left shadow-lg">
         <Row mark={<FoundMark category="hidden-todo" />}>
           Claude found this one — the comment carries no TODO or FIXME marker
         </Row>

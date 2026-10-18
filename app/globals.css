@@ -11,69 +11,82 @@
    */
   color-scheme: dark;
 
-  --background: #070b09;
-  --foreground: #e8f2ec;
+  --background: #0b0d1a;
+  --foreground: #dce6ff;
 
-  /*
-   * Mint everywhere now. This used to resolve to a darker green on light
-   * surfaces, because mint measures 1.25:1 on white — invisible rather than
-   * merely low-contrast. There are no light surfaces left.
-   */
-  --brand-accent: #6dffc6;
+  --brand-accent: #6a6cf6;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-space-grotesk);
+  --font-sans: var(--font-archivo);
   --font-mono: var(--font-jetbrains-mono);
 
   /*
-   * The two accents. `mint` is the brand and every affirmative control; `signal`
-   * is reserved for debt itself — a hotspot, a critical band, a count going the
-   * wrong way. Keeping red to that one meaning is what makes it read as an
-   * alarm rather than as decoration.
-   */
-  --color-mint: #6dffc6;
-  --color-signal: #ff1d4d;
-
-  /*
-   * The third accent, for the middle of the severity scale. Two colours could
-   * only say "fine" or "on fire", which collapses `high` and `moderate` into
-   * whichever neighbour they sit nearer; amber gives the scale a middle.
-   */
-  --color-caution: #ffb020;
-
-  /* Landing-page surface: near-black with a green cast, so mint glows on it. */
-  --color-abyss: #04100d;
-  --color-ink: #eafff7;
-  --color-muted: #7fa79c;
-  --color-subtle: #9dc0b7;
-
-  /*
-   * The application surface scale, lightest-on-top.
+   * The world.
    *
-   * The app used to be a neutral light/dark theme while the landing page and the
-   * list view were hardcoded dark, so in light mode the list rendered as a black
-   * card on a white page. Rather than give the list a light variant, the app
-   * follows the product: one dark surface everywhere.
-   *
-   * Three levels, because two is not enough to separate a page from a card from
-   * a card header, and four is more than anything here needs.
+   * Three grounds, coldest first, then the two structural colours and the one
+   * incandescent accent. `ember` is deliberately scarce: it marks the active
+   * state and the primary action and nothing else, which is what keeps it
+   * reading as heat rather than as a second brand colour.
    */
-  --color-surface: #070b09;
-  --color-panel: #0d1512;
-  --color-raised: #101915;
-  --color-edge: #18241e;
-  --color-edge-strong: #1e2b25;
-  --color-faint: #4e6459;
+  --color-void: #0b0d1a;
+  --color-ink-deep: #13162b;
+  --color-night: #1a1d3a;
+  --color-lilac: #6a6cf6;
+  --color-mist: #bfd2ff;
+  --color-ember: #ff6a3d;
 
   /*
-   * Keyframes cannot be expressed as utilities, so the two the hero needs are
-   * registered here and used as `animate-radar-sweep` / `animate-blip`.
+   * The severity ramp, taken from the field's own filaments rather than
+   * invented alongside them.
+   *
+   * The scan runs cold to hot — steel through lilac and violet into ember — so
+   * a band's colour and its position in the field mean the same thing. A fifth
+   * colour would have to come from outside that ramp, which is the reason
+   * there are four bands and not five.
+   */
+  --color-band-low: #6e7ba6;
+  --color-band-moderate: #6a6cf6;
+  --color-band-high: #b44be8;
+  --color-band-critical: #ff6a3d;
+
+  /* Text, coldest to warmest against the void. */
+  --color-ink: #dce6ff;
+  --color-subtle: #9fb0dd;
+  --color-muted: #7d8cb8;
+  /*
+   * Lifted from #5a6185, which measured 3.21:1 on the void and was carrying
+   * 11–13px text — the stage index, the readout's caption, the scroll rail.
+   * Dim is a role, not a licence to fall under the contrast floor; this clears
+   * 4.5:1 and still sits a clear step below `muted`.
+   */
+  --color-faint: #727da3;
+
+  /* Application surfaces, lightest-on-top. */
+  --color-surface: #0b0d1a;
+  --color-panel: #13162b;
+  --color-raised: #1a1d3a;
+  --color-edge: #232745;
+  --color-edge-strong: #2e3357;
+
+  /*
+   * Keyframes cannot be expressed as utilities, so the ones the page needs are
+   * registered here.
    */
   --animate-radar-sweep: radar-sweep 3.2s linear infinite;
   --animate-blip: blip 1.6s ease-in-out infinite;
+
+  /*
+   * The still field's drift.
+   *
+   * This is what a phone and a reduced-motion visitor get in place of the
+   * shader. It moves nothing on the main thread — only `transform` on a
+   * composited layer — and the reduced-motion block further down stops it
+   * outright.
+   */
+  --animate-drift: drift 38s ease-in-out infinite alternate;
 
   /*
    * Entrances, for things that appear where nothing was.
@@ -119,11 +132,20 @@
   }
 }
 
+@keyframes drift {
+  from {
+    transform: translate3d(-2%, 1%, 0) scale(1.04);
+  }
+  to {
+    transform: translate3d(2%, -1%, 0) scale(1.12);
+  }
+}
+
 @keyframes blip {
   0%,
   100% {
     opacity: 1;
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-mint) 50%, transparent);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-lilac) 50%, transparent);
   }
   50% {
     opacity: 0.4;
@@ -131,13 +153,80 @@
   }
 }
 
-
 body {
   background: var(--background);
   color: var(--foreground);
   /* Was hardcoded to Arial, which quietly beat the font variables the layout
      was loading — the app has never rendered in the font it was configured with. */
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/*
+ * The surfaces nobody draws.
+ *
+ * Selection, the caret, scrollbars and the focus ring all ship with browser
+ * defaults that belong to no design system — a blue highlight and a white
+ * scrollbar track read as "unstyled page" faster than anything that was
+ * actually designed badly. These four declarations are the cheapest signal
+ * that the page was built rather than assembled.
+ */
+::selection {
+  background: color-mix(in srgb, var(--color-lilac) 42%, transparent);
+  color: var(--color-ink);
+}
+
+:root {
+  caret-color: var(--color-ember);
+  scrollbar-color: var(--color-edge-strong) transparent;
+  scrollbar-width: thin;
+}
+
+/*
+ * Chromium ignores `scrollbar-color` on nested scrollers in some versions, and
+ * the board has several. The vendor pseudo-elements cover those.
+ */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-edge-strong);
+  border: 2px solid var(--background);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-faint);
+}
+
+/*
+ * `:focus-visible` rather than `:focus`, so a mouse press on a button does not
+ * leave a ring behind while a keyboard tab still gets one.
+ */
+:focus-visible {
+  outline: 2px solid var(--color-ember);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Underlines sit clear of descenders instead of cutting through them. */
+a {
+  text-underline-offset: 0.18em;
+}
+
+/*
+ * Figures that are compared down a column have to line up.
+ *
+ * Counts, risk scores and line numbers are read against each other on the
+ * board; proportional numerals make a column of them ragged.
+ */
+.tabular {
+  font-variant-numeric: tabular-nums;
 }
 
 /*

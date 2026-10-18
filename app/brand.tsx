@@ -5,10 +5,14 @@
  * and the signed-in header now show the same thing. It replaces the drawn SVG
  * wordmark that used to sit in the header — one mark, one definition.
  *
- * The accent comes from `--brand-accent`, not a hardcoded green. The brand
- * mint (#6dffc6) measures 15.8:1 on a dark surface and 1.25:1 on white, so on
- * the light theme it is invisible rather than merely low-contrast; the variable
- * resolves to a darker same-hue green there. See `app/globals.css`.
+ * The accent comes from `--brand-accent` rather than a hardcoded value, so the
+ * mark follows the world instead of pinning it. It currently resolves to lilac
+ * `#6a6cf6`, which measures 4.6:1 on the void.
+ *
+ * This comment used to describe a mint accent that was invisible on white and
+ * a variable that swapped to a darker green for a light theme. Both are gone:
+ * there is one dark world now, and no green anywhere in it. See
+ * `app/globals.css`.
  */
 
 /** The radar dial: a rim, a centre blip, and a sweep that never stops. */

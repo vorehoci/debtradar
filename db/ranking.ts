@@ -2,7 +2,7 @@ import { and, asc, desc, eq, ilike, isNotNull, isNull, or, type SQL, sql } from 
 import { type Band, BAND_THRESHOLDS, WEIGHTS } from "@/lib/describe"
 
 import { db } from "./index"
-import { todos } from "./schema"
+import { modelUsage, todos } from "./schema"
 
 /**
  * Caps turn unbounded quantities into 0–1 factors.
@@ -400,4 +400,25 @@ export async function repositoryStats(repositoryId: number) {
   // timestamp string however it is annotated. Converting here keeps the lie out
   // of every caller.
   return { ...row, oldest: row.oldest === null ? null : new Date(row.oldest) }
+}
+
+/**
+ * The largest line count any scan of this repository has reported.
+ *
+ * Read from `model_usage` rather than typed into the page. The landing page
+ * states findings against lines read, and a figure like "4.27M" hand-written
+ * into a component is a measurement that stops being one the next time the
+ * repository grows — the exact failure the fabricated stats row had.
+ *
+ * `max` rather than the latest row: a push scan reads a diff and records a
+ * small number, while a deep scan walks the whole tree. The largest is the
+ * only one that answers "how big is this codebase".
+ */
+export async function linesRead(repositoryId: number): Promise<number | null> {
+  const [row] = await db
+    .select({ lines: sql<number | null>`max(${modelUsage.linesScanned})::int` })
+    .from(modelUsage)
+    .where(eq(modelUsage.repositoryId, repositoryId))
+
+  return row?.lines ?? null
 }

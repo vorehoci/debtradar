@@ -12,10 +12,10 @@ import { BANDS } from "@/lib/describe"
  * identity channel.
  */
 const BAND_FILL: Record<Band, string> = {
-  critical: "#d03b3b",
-  high: "#ec835a",
-  moderate: "#fab219",
-  low: "#0ca30c",
+  critical: "#ff6a3d",
+  high: "#b44be8",
+  moderate: "#6a6cf6",
+  low: "#6e7ba6",
 }
 
 export function BandChart({ counts }: { counts: Record<Band, number> }) {
@@ -38,9 +38,9 @@ export function BandChart({ counts }: { counts: Record<Band, number> }) {
 
             {/* Scaled to the largest band rather than the total: with a long
                 tail the small bands would otherwise be invisible slivers. */}
-            <span className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-raised">
+            <span className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-[2px] bg-raised">
               <span
-                className="block h-full rounded-full"
+                className="block h-full rounded-[2px]"
                 style={{
                   width: `${Math.max(count > 0 ? 2 : 0, (count / widest) * 100)}%`,
                   backgroundColor: BAND_FILL[band],

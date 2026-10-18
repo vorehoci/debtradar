@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { Arrow } from "@/app/_icons"
 import Link from "next/link"
 import { SignInButton } from "@/app/_landing/sign-in"
 import { currentRepositories } from "@/lib/session-repos"
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-const ACTION = "bg-mint text-surface hover:bg-mint/90"
+const ACTION = "bg-lilac text-surface hover:bg-lilac/90"
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -34,7 +35,7 @@ function Check() {
   return (
     <span
       aria-hidden="true"
-      className="flex size-9 items-center justify-center rounded-full bg-mint text-surface"
+      className="flex size-9 items-center justify-center rounded-[3px] bg-lilac text-surface"
     >
       <svg viewBox="0 0 16 16" className="size-4" fill="none">
         <path
@@ -73,7 +74,7 @@ export default async function Installed(props: PageProps<"/installed">) {
       <Shell>
         <RecordOutcome outcome="requested" />
 
-        <h1 className="text-2xl font-semibold tracking-tight">Waiting on an owner</h1>
+        <h1 className="text-[28px] font-semibold tracking-[-.03em] [font-stretch:80%]">Waiting on an owner</h1>
         <p className="mt-2 text-muted">
           You have asked to install debtradar on an organisation you do not administer. GitHub has
           sent the request to its owners — nothing is installed and no code has been read yet.
@@ -106,7 +107,7 @@ export default async function Installed(props: PageProps<"/installed">) {
     // only what is certain and points at the page that can tell them the truth.
     return (
       <Shell>
-        <h1 className="text-2xl font-semibold tracking-tight">Nothing to confirm here</h1>
+        <h1 className="text-[28px] font-semibold tracking-[-.03em] [font-stretch:80%]">Nothing to confirm here</h1>
         <p className="mt-2 text-muted">
           This page is where GitHub sends you after installing debtradar. Reaching it directly means
           there is no installation to report on.
@@ -115,10 +116,10 @@ export default async function Installed(props: PageProps<"/installed">) {
         <div className="mt-8 flex flex-wrap items-center gap-4">
           <Link
             href={signedIn ? "/dashboard" : "/"}
-            className={`inline-flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-colors ${ACTION}`}
+            className={`inline-flex items-center gap-2 rounded-[3px] px-4 py-2.5 text-sm font-medium transition-colors ${ACTION}`}
           >
             {signedIn ? "Go to your dashboard" : "Back to debtradar"}
-            <span aria-hidden="true">→</span>
+            <Arrow />
           </Link>
         </div>
       </Shell>
@@ -131,7 +132,7 @@ export default async function Installed(props: PageProps<"/installed">) {
     <Shell>
       <div className="flex items-center gap-3.5">
         <Check />
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="text-[28px] font-semibold tracking-[-.03em] [font-stretch:80%]">
           {updated ? "Access updated" : "debtradar is installed"}
         </h1>
       </div>
@@ -176,7 +177,7 @@ export default async function Installed(props: PageProps<"/installed">) {
       {signedIn ? (
         <InstallProgress signedIn outcome={updated ? "updated" : "installed"} />
       ) : (
-        <div className="mt-6 rounded-lg border border-edge p-5">
+        <div className="mt-6 rounded-[3px] border border-edge p-5">
           <RecordOutcome outcome={updated ? "updated" : "installed"} />
 
           <p className="text-sm text-muted">
@@ -186,10 +187,10 @@ export default async function Installed(props: PageProps<"/installed">) {
           </p>
 
           <SignInButton
-            className={`mt-4 inline-flex cursor-pointer items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-colors ${ACTION}`}
+            className={`mt-4 inline-flex cursor-pointer items-center gap-2 rounded-[3px] px-4 py-2.5 text-sm font-medium transition-colors ${ACTION}`}
           >
             {expired ? "Sign in again" : "Sign in with GitHub"}
-            <span aria-hidden="true">→</span>
+            <Arrow />
           </SignInButton>
         </div>
       )}

@@ -10,5 +10,5 @@
  * them would just add noise to a screen reader.
  */
 export function Divider() {
-  return <hr aria-hidden="true" className="h-px w-full border-0 bg-[#18241e] lg:hidden" />
+  return <hr aria-hidden="true" className="h-px w-full border-0 bg-[#232745] lg:hidden" />
 }

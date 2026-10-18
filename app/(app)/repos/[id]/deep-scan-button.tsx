@@ -129,7 +129,7 @@ export function DeepScanButton({
         disabled={busy}
         onClick={start}
         aria-busy={busy}
-        className="inline-flex items-center gap-2 rounded bg-violet-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-violet-700 disabled:opacity-50"
+        className="inline-flex items-center gap-2 rounded bg-lilac px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-lilac/80 disabled:opacity-50"
       >
         {busy ? <Spinner /> : null}
         {phase.name === "running"
@@ -190,9 +190,9 @@ function Status({ phase }: { phase: Phase }) {
       aria-live="polite"
       className={`mt-2 text-[11px] ${
         phase.name === "done" || phase.name === "unchanged"
-          ? "text-mint"
+          ? "text-lilac"
           : phase.name === "problem"
-            ? "text-amber-500"
+            ? "text-ember"
             : "text-muted"
       }`}
     >

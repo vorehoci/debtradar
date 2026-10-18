@@ -127,7 +127,7 @@ export function SeedButton() {
         disabled={busy}
         onClick={start}
         aria-busy={busy}
-        className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-mint px-4 py-2.5 text-sm font-medium text-surface transition-colors hover:bg-mint/90 disabled:cursor-default disabled:opacity-50"
+        className="inline-flex cursor-pointer items-center gap-2 rounded-[3px] bg-lilac px-4 py-2.5 text-sm font-medium text-surface transition-colors hover:bg-lilac/90 disabled:cursor-default disabled:opacity-50"
       >
         {busy ? <Spinner /> : null}
         {phase.name === "waiting"
@@ -182,9 +182,9 @@ function Status({ phase }: { phase: Phase }) {
       aria-live="polite"
       className={`mt-2.5 text-xs ${
         phase.name === "done"
-          ? "text-mint"
+          ? "text-lilac"
           : phase.name === "problem"
-            ? "text-amber-500"
+            ? "text-ember"
             : "text-muted"
       }`}
     >

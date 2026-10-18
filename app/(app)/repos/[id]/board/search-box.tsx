@@ -83,7 +83,7 @@ export function SearchBox({ initial }: { initial: string }) {
         }}
         placeholder="Search text or path…"
         aria-label="Search TODOs"
-        className="w-full sm:w-56 rounded-md border border-edge-strong bg-panel px-3 py-1.5 text-xs text-ink outline-none transition-colors placeholder:text-faint focus:border-mint/50"
+        className="w-full sm:w-56 rounded-[3px] border border-edge-strong bg-panel px-3 py-1.5 text-xs text-ink outline-none transition-colors placeholder:text-faint focus:border-lilac/50"
       />
       {pending ? (
         <span className="absolute top-1/2 right-2.5 -translate-y-1/2 text-[11px] text-faint">

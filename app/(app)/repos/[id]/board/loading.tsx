@@ -16,7 +16,7 @@ export default function Loading() {
             <div className="mb-3 h-4 w-24 rounded bg-edge" />
             <div className="flex flex-col gap-2">
               {[0, 1, 2, 3].map((card) => (
-                <div key={card} className="h-24 rounded-lg border border-edge bg-panel" />
+                <div key={card} className="h-24 rounded-[3px] border border-edge bg-panel" />
               ))}
             </div>
           </div>

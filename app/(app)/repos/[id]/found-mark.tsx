@@ -22,7 +22,7 @@ export function FoundMark({ category }: { category: string }) {
   const title = `Found by Claude — no marker on this comment (${kind})`
 
   return (
-    <span title={title} aria-label={title} className="inline-flex items-center text-violet-400">
+    <span title={title} aria-label={title} className="inline-flex items-center text-lilac">
       <svg viewBox="0 0 16 16" className="h-3 w-3" fill="currentColor" aria-hidden="true">
         <path
           fillRule="evenodd"

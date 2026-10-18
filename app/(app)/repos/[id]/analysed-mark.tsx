@@ -21,7 +21,7 @@ export function AnalysedMark({ fixable, stale }: { fixable: boolean | null; stal
       aria-label={title}
       className={`inline-flex items-center ${
         // A stale verdict is still a verdict, but it should not look current.
-        stale ? "text-faint" : "text-violet-400"
+        stale ? "text-faint" : "text-lilac"
       }`}
     >
       <svg viewBox="0 0 16 16" className="h-3 w-3" fill="currentColor" aria-hidden="true">

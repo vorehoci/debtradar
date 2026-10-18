@@ -1,4 +1,5 @@
 import { appInstallUrl } from "@/lib/github"
+import { Arrow } from "@/app/_icons"
 import { TrackClick } from "@/app/_landing/track-click"
 import { SeedButton } from "./seed-button"
 
@@ -10,12 +11,12 @@ import { SeedButton } from "./seed-button"
  * the brand accent — with the surface colour as the text, since mint is bright
  * enough that white on it is unreadable.
  */
-const ACTION = "bg-mint text-surface hover:bg-mint/90"
+const ACTION = "bg-lilac text-surface hover:bg-lilac/90"
 
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
     <li className="flex gap-3.5">
-      <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-mint text-xs font-medium tabular-nums text-surface">
+      <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-[3px] bg-lilac text-xs font-medium tabular-nums text-surface">
         {n}
       </span>
       <div className="min-w-0">
@@ -43,7 +44,7 @@ export async function GetStarted({ installed }: { installed: boolean }) {
   const href = await appInstallUrl()
 
   return (
-    <section className="rounded-lg border border-edge p-8">
+    <section className="rounded-[3px] border border-edge p-8">
       <h2 className="text-base font-semibold tracking-tight">Install debtradar on GitHub</h2>
       <p className="mt-1 text-sm text-muted">
         debtradar reads code through a GitHub App, so it needs access to a repository before it can
@@ -71,10 +72,10 @@ export async function GetStarted({ installed }: { installed: boolean }) {
           href={href}
           // Opened in the same tab: this is a hand-off to GitHub that ends by
           // sending the user back, not a reference they read alongside the app.
-          className={`mt-7 inline-flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-colors ${ACTION}`}
+          className={`mt-7 inline-flex items-center gap-2 rounded-[3px] px-4 py-2.5 text-sm font-medium transition-colors ${ACTION}`}
         >
           Install on GitHub
-          <span aria-hidden="true">→</span>
+          <Arrow />
         </a>
       </TrackClick>
 
@@ -115,7 +116,7 @@ function Reason({ children }: { children: React.ReactNode }) {
  */
 function AwaitingFirstScan() {
   return (
-    <section className="rounded-lg border border-dashed border-edge-strong p-8">
+    <section className="rounded-[3px] border border-dashed border-edge-strong p-8">
       <h2 className="text-base font-semibold tracking-tight">Scanning your repositories</h2>
       <p className="mt-1 text-sm text-muted">
         debtradar is installed and working through the code it was given access to. Large
@@ -175,7 +176,7 @@ export async function AddRepositories() {
   }
 
   return (
-    <section className="mt-8 rounded-lg border border-dashed border-edge-strong p-5">
+    <section className="mt-8 rounded-[3px] border border-dashed border-edge-strong p-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0">
           <h2 className="text-sm font-medium">Add another repository</h2>
@@ -197,10 +198,10 @@ export async function AddRepositories() {
           <TrackClick event="install-click" placement="add-repositories">
             <a
               href={href}
-              className={`inline-flex items-center gap-2 rounded-md px-3.5 py-2 text-sm font-medium transition-colors ${ACTION}`}
+              className={`inline-flex items-center gap-2 rounded-[3px] px-3.5 py-2 text-sm font-medium transition-colors ${ACTION}`}
             >
               Install on GitHub
-              <span aria-hidden="true">→</span>
+              <Arrow />
             </a>
           </TrackClick>
         </div>

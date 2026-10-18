@@ -37,7 +37,7 @@ const STEPS: Step[] = [
       <>
         Install the GitHub App on the repositories you pick. It reads code and metadata, and the
         only thing it writes back is a neutral check on your pull requests.{" "}
-        <span className="text-[#6c8579]">
+        <span className="text-[#7d8cb8]">
           Want to scan a project you do not own? Fork it and install on your fork — the ranking is
           the same. GitLab is planned.
         </span>
@@ -64,20 +64,17 @@ export function HowItWorks() {
       className="scroll-mt-20 flex w-full flex-col items-center gap-7 px-5 py-[60px] lg:gap-10 lg:px-[clamp(20px,4vw,56px)] lg:pt-5 lg:pb-[90px]"
     >
       <div className="flex w-full max-w-[1120px] flex-col gap-2.5 lg:gap-3">
-        {/* Braced string: a bare `// PIPELINE` text node reads as a stray
-            comment to the linter and to anyone skimming the file. */}
-        <p className="font-mono text-[11px] tracking-[2px] text-mint lg:text-xs">{"// PIPELINE"}</p>
 
         {/* "Three steps", not the design's "Three commands" — there is no CLI to
             type anything into. */}
-        <h2 className="text-[28px] leading-[1.15] font-bold text-[#e8f2ec] lg:text-[clamp(30px,3.6vw,46px)] lg:leading-[1.1] lg:text-[#eaf6f0]">
+        <h2 className="text-[28px] leading-[1.15] font-bold text-[#dce6ff] lg:text-[clamp(30px,3.6vw,46px)] lg:leading-[1.1] lg:text-[#dce6ff]">
           Three steps from blind spot to backlog.
         </h2>
 
         {/* Only the narrow frames carry a subline, and the design's — "No agents
             to babysit, no code to upload" — is the VPC claim in shorter words.
             This says what is actually true of a webhook-driven scan. */}
-        <p className="text-[15px] leading-[1.55] text-[#7c8c84] lg:hidden">
+        <p className="text-[15px] leading-[1.55] text-[#7d8cb8] lg:hidden">
           Install once. Every push re-scans and re-ranks — there is nothing to run yourself.
         </p>
       </div>
@@ -86,20 +83,20 @@ export function HowItWorks() {
         {STEPS.map((step) => (
           <div
             key={step.number}
-            className="flex flex-row gap-3.5 rounded-[14px] border border-[#18241e] bg-[#0d1512] px-4 py-[18px] lg:min-w-[280px] lg:flex-1 lg:flex-col lg:gap-4 lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0"
+            className="flex flex-row gap-3.5 rounded-[3px] border border-[#232745] bg-[#13162b] px-4 py-[18px] lg:min-w-[280px] lg:flex-1 lg:flex-col lg:gap-4 lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0"
           >
             {/* One element, two treatments: a bare mint numeral on the card, a
                 filled mint disc with a dark numeral in the column layout. */}
-            <span className="shrink-0 font-mono text-[13px] text-mint lg:flex lg:size-[30px] lg:items-center lg:justify-center lg:rounded-full lg:bg-mint lg:font-sans lg:font-bold lg:text-[#070b09]">
+            <span className="shrink-0 font-mono text-[13px] text-lilac lg:flex lg:size-[30px] lg:items-center lg:justify-center lg:rounded-[3px] lg:bg-lilac lg:font-sans lg:font-bold lg:text-[#0b0d1a]">
               {step.number}
             </span>
 
             <div className="flex min-w-0 flex-col gap-1.5 lg:gap-4">
-              <h3 className="text-base font-medium text-[#e8f2ec] lg:text-xl lg:font-bold lg:text-[#eaf6f0]">
+              <h3 className="text-base font-medium text-[#dce6ff] lg:text-xl lg:font-bold lg:text-[#dce6ff]">
                 {step.title}
               </h3>
 
-              <p className="text-[15px] leading-[1.55] text-[#7c8c84] lg:leading-[1.6] lg:text-[#8aa396]">
+              <p className="text-[15px] leading-[1.55] text-[#7d8cb8] lg:leading-[1.6] lg:text-[#9fb0dd]">
                 {step.body}
               </p>
             </div>

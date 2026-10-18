@@ -17,11 +17,13 @@
  * bordered two-column panel above it.
  */
 
+import { BandMark } from "@/app/_icons"
+
 /** The three facts the model is actually asked for, as the card presents them. */
 const VERDICT: [label: string, value: string, tone: string][] = [
-  ["VERDICT", "ACTIONABLE", "text-signal"],
-  ["SCOPE", "SINGLE-FILE", "text-caution"],
-  ["CONFIDENCE", "0.86", "text-mint"],
+  ["VERDICT", "ACTIONABLE", "text-band-critical"],
+  ["SCOPE", "SINGLE-FILE", "text-band-high"],
+  ["CONFIDENCE", "0.86", "text-lilac"],
 ]
 
 const BULLETS = [
@@ -77,21 +79,18 @@ export function ClaudeAnalysis() {
       {/* The panel is only a panel above `lg:`. Below it the fill, border and
           radius come off and this is just the column the two children stack in,
           which is what both narrow frames show. */}
-      <div className="flex w-full max-w-[1120px] flex-col gap-7 lg:flex-row lg:items-center lg:gap-[60px] lg:rounded-[20px] lg:border lg:border-[#1a241f] lg:bg-[#0b120f] lg:p-[46px]">
+      <div className="flex w-full max-w-[1120px] flex-col gap-7 lg:flex-row lg:items-center lg:gap-[60px] lg:rounded-[3px] lg:border lg:border-[#232745] lg:bg-[#13162b] lg:p-[46px]">
         {/* 458 and 510 are the design's two column widths; with the 60px gap
             they fill the 1028px inside the panel's padding exactly. Both need
             `min-w-0`, and the copy needs an explicit basis — without one it
             sizes to its content, takes 964px, and starves the card to 2px. */}
         <div className="flex flex-col gap-2.5 lg:min-w-0 lg:basis-[458px] lg:gap-[18px]">
-          <p className="text-[11px] tracking-[2px] text-mint lg:text-xs">
-            {"// CLAUDE-POWERED ANALYSIS"}
-          </p>
 
-          <h2 className="font-sans text-[28px] leading-[1.15] font-bold text-[#e8f2ec] lg:text-[38px] lg:leading-[1.1] lg:text-[#eaf6f0]">
+          <h2 className="font-sans text-[clamp(28px,3.4vw,46px)] leading-[1.08] font-semibold tracking-[-.03em] text-ink [font-stretch:80%]">
             It reads the comment like a senior engineer would.
           </h2>
 
-          <p className="text-[15px] leading-[1.55] text-[#7c8c84] lg:leading-[1.6] lg:text-[#8aa396]">
+          <p className="text-[15px] leading-[1.55] text-[#7d8cb8] lg:leading-[1.6] lg:text-[#9fb0dd]">
             A regex knows a TODO exists. Claude knows the one that says “temporary” has been
             temporary for three years, that it guards a payment path, and that the author left the
             company.
@@ -101,8 +100,8 @@ export function ClaudeAnalysis() {
               and the card below already carries the same three claims. */}
           <ul className="hidden flex-col gap-3 pt-1.5 lg:flex">
             {BULLETS.map((bullet) => (
-              <li key={bullet} className="flex items-center gap-2.5 text-sm text-[#c6d9cf]">
-                <span className="text-mint">
+              <li key={bullet} className="flex items-center gap-2.5 text-sm text-[#bfd2ff]">
+                <span className="text-lilac">
                   <CheckIcon />
                 </span>
                 {bullet}
@@ -111,30 +110,34 @@ export function ClaudeAnalysis() {
           </ul>
         </div>
 
-        <div className="flex flex-col gap-4 rounded-[14px] border border-[#18241e] bg-[#0d1512] p-[18px] lg:min-w-0 lg:grow lg:basis-[510px] lg:gap-0 lg:border-[#22302a] lg:bg-[#0e1712] lg:p-0">
+        <div className="flex flex-col gap-4 rounded-[3px] border border-[#232745] bg-[#13162b] p-[18px] lg:min-w-0 lg:grow lg:basis-[510px] lg:gap-0 lg:border-[#2e3357] lg:bg-[#13162b] lg:p-0">
           {/* Above `lg:` the desktop frame gives the card its own header strip;
               below it the same idea is a pill sitting inside the card body. */}
-          <div className="hidden items-center gap-[9px] bg-[#121d18] px-[18px] py-3.5 text-xs text-[#a9c0b5] lg:flex">
-            <span className="text-mint">
+          <div className="hidden items-center gap-[9px] bg-[#1a1d3a] px-[18px] py-3.5 text-xs text-[#9fb0dd] lg:flex">
+            <span className="text-lilac">
               <SparkleIcon />
             </span>
             claude · comment analysis
           </div>
 
-          <div className="flex gap-3 rounded-[10px] bg-[#070b09] p-3.5 lg:rounded-none lg:bg-[#0a100d] lg:p-[18px]">
-            <span aria-hidden="true" className="w-[3px] shrink-0 rounded-sm bg-signal" />
-            <p className="min-w-0 flex-1 text-xs leading-[1.5] break-words text-[#e8f2ec] lg:text-[13px] lg:leading-[1.6] lg:text-[#c6d9cf]">
+          <div className="flex gap-3 rounded-[3px] bg-[#0b0d1a] p-3.5 lg:rounded-none lg:bg-[#0b0d1a] lg:p-[18px]">
+            {/* The world's severity mark, not a coloured rule down the edge.
+                A border-left above 1px on a callout is one of the craft
+                floor's named refusals, and this page already has a diamond
+                that means exactly this. */}
+            <BandMark className="mt-1 shrink-0 bg-band-critical" />
+            <p className="min-w-0 flex-1 text-xs leading-[1.5] break-words text-[#dce6ff] lg:text-[13px] lg:leading-[1.6] lg:text-[#bfd2ff]">
               {"// TODO: signature validation disabled for staging — DO NOT SHIP"}
             </p>
           </div>
 
           <div className="flex flex-col gap-4 lg:gap-3.5 lg:px-[18px] lg:py-5">
-            <span className="flex w-fit items-center gap-2 rounded-full border border-[#2c5f4a] bg-[#0a1c15] px-2.5 py-1.5 text-[11px] tracking-[0.5px] text-mint lg:hidden">
+            <span className="flex w-fit items-center gap-2 rounded-[3px] border border-[#6a6cf6] bg-[#1a1d3a] px-2.5 py-1.5 text-[11px] tracking-[0.5px] text-lilac lg:hidden">
               <SparkleIcon />
               Claude-powered analysis
             </span>
 
-            <p className="font-sans text-[15px] leading-[1.55] text-[#e8f2ec] lg:text-sm lg:leading-[1.65] lg:text-[#c6d9cf]">
+            <p className="font-sans text-[15px] leading-[1.55] text-[#dce6ff] lg:text-sm lg:leading-[1.65] lg:text-[#bfd2ff]">
               Signature validation is disabled on a production auth path — requests are accepted
               unverified whenever the staging flag leaks into a release build.
             </p>
@@ -142,7 +145,7 @@ export function ClaudeAnalysis() {
             {/* The second paragraph loses the frames' "27 downstream call sites"
                 and "Estimated fix: ~3h". What is left — age and an inactive
                 author — are two of the four signals the ranker really computes. */}
-            <p className="font-sans text-[15px] leading-[1.55] text-[#7c8c84] lg:text-sm lg:leading-[1.65]">
+            <p className="font-sans text-[15px] leading-[1.55] text-[#7d8cb8] lg:text-sm lg:leading-[1.65]">
               It was added for a demo two years ago, and the author&apos;s last commit was fourteen
               months back, so there is nobody left to ask.
             </p>
@@ -155,9 +158,9 @@ export function ClaudeAnalysis() {
               {VERDICT.map(([label, value, tone]) => (
                 <div
                   key={label}
-                  className="flex flex-1 flex-col gap-1 rounded-lg border border-[#18241e] bg-[#070b09] p-2.5"
+                  className="flex flex-1 flex-col gap-1 rounded-[3px] border border-[#232745] bg-[#0b0d1a] p-2.5"
                 >
-                  <p className="text-[9px] tracking-[1px] text-[#7c8c84]">{label}</p>
+                  <p className="text-[11px] tracking-[1px] text-[#7d8cb8]">{label}</p>
                   <p className={`text-xs ${tone}`}>{value}</p>
                 </div>
               ))}

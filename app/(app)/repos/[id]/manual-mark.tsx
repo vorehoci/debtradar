@@ -13,9 +13,12 @@ export function ManualMark({ by, at }: { by: string | null; at: Date | null }) {
     <span
       title={`Severity set by ${by ?? "someone"} on ${when}`}
       aria-label="Severity set manually"
-      // Dark green: distinct enough from the band pills (red/amber/neutral)
+      // Mist: the world's cool structural colour, and the third leg of its
+      // provenance scheme — lilac is the machine, ember is attention, mist is
+      // a person. The old comment said "dark green, distinct from the band
+      // pills (red/amber/neutral)"; none of those colours exist any more.
       // that it reads as a separate kind of fact, not another severity signal.
-      className="inline-flex items-center text-emerald-500"
+      className="inline-flex items-center text-mist"
     >
       <svg viewBox="0 0 16 16" className="h-3 w-3" fill="currentColor" aria-hidden="true">
         <path d="M11.4 1.6a1.4 1.4 0 0 1 2 2l-.8.8-2-2 .8-.8ZM9.8 3.2l2 2L5 12H3v-2l6.8-6.8Z" />

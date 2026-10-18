@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { Arrow } from "@/app/_icons"
 import { todoCounts } from "@/db/ranking"
 import { DEMO_REPOSITORY_ID } from "@/lib/demo"
 import { TrackClick } from "./track-click"
@@ -39,7 +40,8 @@ export async function DemoCta({ className }: { className: string }) {
   return (
     <TrackClick event="cta" placement="hero-demo">
       <Link href="/demo" className={`pointer-events-auto inline-block ${className}`}>
-        {text} →
+        {text}
+        <Arrow />
       </Link>
     </TrackClick>
   )

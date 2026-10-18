@@ -23,8 +23,8 @@ export function DismissedChip({
   return (
     <span
       title={by ? (notATodo ? `Marked not a real TODO by ${by}` : `Dismissed by ${by}`) : undefined}
-      className={`rounded px-1 text-[9px] font-medium uppercase ${
-        notATodo ? "bg-amber-950 text-amber-400" : "bg-edge text-muted"
+      className={`rounded px-1 text-[11px] font-medium uppercase ${
+        notATodo ? "bg-ember/15 text-ink" : "bg-edge text-muted"
       }`}
     >
       {label}

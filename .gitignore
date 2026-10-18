@@ -42,4 +42,18 @@ next-env.d.ts
 
 # claude code — per-developer settings, not project config
 .claude/settings.local.json
+# Installed tooling, not project source: 21MB including a platform-specific
+# binary. Re-installed per machine rather than carried in the repo.
+.claude/skills/
+.claude/agents/
 !.env.example
+
+# impeccable — captured evidence for a finish review, regenerable from a build.
+# The direction contract (.impeccable/surfaces/) and config.json are project
+# state and stay tracked.
+.impeccable/review/
+.impeccable/questions/
+.impeccable/mocks/
+.impeccable/hook.cache.json
+# Per-machine, by the skill's own convention.
+.impeccable/config.local.json
